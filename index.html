@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学生奖惩公示系统</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="vendor/fontawesome/css/all.min.css">
+    <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"> -->
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-university"></i> 学生奖惩公示系统</h1>
+            <p class="subtitle">云衢中学初二年级部</p>
+        </header>
+        
+        <div class="controls">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="搜索学生姓名、班级或原因...">
+                <button class="search-btn" id="searchBtn">
+                    搜索 <i class="fas fa-search"></i> 
+                </button>
+            </div>
+            
+            <div class="filter-controls">
+                <select class="filter-select" id="filterType">
+                    <option value="all">全部类型</option>
+                    <option value="praise">仅表彰</option>
+                    <option value="criticism">仅批评</option>
+                </select>
+                
+                <select class="date-filter" id="dateFilter">
+                    <option value="all">全部时间</option>
+                    <option value="week">本周</option>
+                    <option value="month">本月</option>
+                    <option value="current_semester" selected>本学期</option>
+                    <option value="last_semester">上学期</option>
+                </select>
+                
+                <select class="semester-filter" id="semesterFilter">
+                    <option value="all">全部学期</option>
+                    <!-- 学期选项将通过JavaScript动态生成 -->
+                </select>
+            </div>
+            
+            <div class="scroll-controls">
+                <button class="control-btn" id="pauseBtn">
+                    <i class="fas fa-pause"></i> 暂停滚动
+                </button>
+                <button class="control-btn" id="resetBtn">
+                    <i class="fas fa-redo"></i> 重置位置
+                </button>
+            </div>
+        </div>
+        
+        <div class="csv-controls">
+            <button class="csv-btn" id="loadDataBtn">
+                <i class="fas fa-sync-alt"></i> 重新加载CSV数据
+            </button>
+            <button class="csv-btn" id="showCurrentSemesterBtn">
+                <i class="fas fa-calendar-alt"></i> 显示当前学期信息
+            </button>
+            <a class="csv-btn" href="all_semesters.html" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+                <i class="fas fa-layer-group"></i> 汇总所有学期
+            </a>
+        </div>
+        
+        <div id="semesterInfoDisplay" class="semester-info-display" style="display: none;">
+            <!-- 学期信息将通过JavaScript动态显示 -->
+        </div>
+        
+        <div class="content-area">
+            <div class="column">
+                <div class="column-header praise-header">
+                    <i class="fas fa-trophy"></i> 优秀表彰榜
+                    <span id="praiseCount" style="font-size: 0.8rem; margin-left: 10px;"></span>
+                </div>
+                <div class="column-content">
+                    <div class="scroll-list" id="praiseList">
+                        <!-- 表彰内容将通过JavaScript从CSV动态生成 -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="column">
+                <div class="column-header criticism-header">
+                    <i class="fas fa-exclamation-triangle"></i> 需改进方面
+                    <span id="criticismCount" style="font-size: 0.8rem; margin-left: 10px;"></span>
+                </div>
+                <div class="column-content">
+                    <div class="scroll-list" id="criticismList">
+                        <!-- 批评内容将通过JavaScript从CSV动态生成 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="scroll-status">
+            <div class="status-dot" id="statusDot"></div>
+            <span id="statusText">自动滚动中</span>
+        </div>
+        
+        <footer>
+            <p>copyright © 2026<a href="https://cookiesky.cn" style="text-decoration: none;color: blueviolet;"> cookiesky </a>All Rights Reserved.学生奖惩公示系统 当前时间：<span id="currentTime"></span></p>
+        </footer>
+    </div>
+
+    <script src="js/select_enhancer.js"></script>
+    <script src="js/script.js"></script>
+</body>
+</html>

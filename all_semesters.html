@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>所有学期奖惩记录汇总 (CSV)</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="vendor/fontawesome/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-layer-group"></i> 全部记录汇总</h1>
+            <p class="subtitle">从每学期数据拼接汇总，支持搜索与筛选（时间、人物、管理员、奖惩方式等）</p>
+            <p class="subtitle"><a href="index.html">← 返回单学期视图</a></p>
+        </header>
+
+        <div class="controls">
+            <div class="search-box">
+                <input type="text" id="globalSearchInput" placeholder="搜索：人物/事项/管理员/方式/状态...">
+                <button class="search-btn" id="globalSearchBtn">
+                    搜索 <i class="fas fa-search"></i>
+                </button>
+            </div>
+
+            <div class="filter-controls" style="flex-wrap: wrap;">
+                <select class="filter-select" id="typeFilter">
+                    <option value="all">全部类型</option>
+                    <option value="奖">仅奖励(奖)</option>
+                    <option value="惩">仅惩罚(惩)</option>
+                </select>
+
+                <select class="semester-filter" id="semesterFilterAll">
+                    <option value="all">全部时期</option>
+                </select>
+
+                <select class="filter-select" id="adminFilter">
+                    <option value="all">全部管理员/处理人</option>
+                </select>
+
+                <select class="filter-select" id="methodFilter">
+                    <option value="all">全部奖惩方式</option>
+                </select>
+
+                <select class="filter-select" id="statusFilter">
+                    <option value="all">全部状态</option>
+                </select>
+            </div>
+
+            <div class="filter-controls" style="flex-wrap: wrap;">
+                <div class="date-range">
+                    <label>开始</label>
+                    <input type="date" id="startDate">
+                </div>
+                <div class="date-range">
+                    <label>结束</label>
+                    <input type="date" id="endDate">
+                </div>
+                <button class="control-btn" id="resetFiltersBtn">
+                    <i class="fas fa-broom"></i> 清空筛选
+                </button>
+            </div>
+        </div>
+
+        <div class="table-meta">
+            <span id="totalCount"></span>
+            <span id="filteredCount"></span>
+        </div>
+
+        <div class="table-wrap">
+            <table class="records-table">
+                <thead>
+                    <tr>
+                        <th>学期</th>
+                        <th>类型</th>
+                        <th>人物</th>
+                        <th>事项</th>
+                        <th>时间</th>
+                        <th>管理员/处理人</th>
+                        <th>方式</th>
+                        <th>分值</th>
+                        <th>状态</th>
+                    </tr>
+                </thead>
+                <tbody id="recordsTbody">
+                    <tr><td colspan="9" style="text-align:center; padding:20px;">加载中...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <footer>
+            <p>copyright © 2026<a href="https://cookiesky.cn" style="text-decoration: none;color: blueviolet;"> cookiesky </a>All Rights Reserved.学生奖惩公示系统</p>
+        </footer>
+    </div>
+
+    <script src="js/select_enhancer.js"></script>
+    <script src="js/all_semesters.js"></script>
+</body>
+</html>
