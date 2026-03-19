@@ -160,13 +160,16 @@ function fetchText(url, cb) {
     // Android 4.4 无 fetch，改用 XHR
     try {
         var xhr = new XMLHttpRequest();
-        xhr.open('GET', url, true);
-        // 尽量绕开缓存（某些老浏览器对 cache: no-store 不生效）
-        xhr.setRequestHeader('Cache-Control', 'no-cache');
+        // 添加随机参数强制刷新缓存
+        var cacheBuster = '?_=' + new Date().getTime();
+        xhr.open('GET', url + cacheBuster, true);
+        // 多重缓存控制
+        xhr.setRequestHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        xhr.setRequestHeader('Pragma', 'no-cache');
+        xhr.setRequestHeader('Expires', '0');
         xhr.onreadystatechange = function () {
             if (xhr.readyState !== 4) return;
             if ((xhr.status >= 200 && xhr.status < 300) || xhr.status === 0) {
-                // status=0 常见于 file:// 或某些 webview；但内容可能可读
                 cb(null, xhr.responseText);
             } else {
                 cb(new Error('HTTP ' + xhr.status + ' ' + (xhr.statusText || '')));
@@ -177,6 +180,7 @@ function fetchText(url, cb) {
         cb(e);
     }
 }
+
 
 function normalizeDateTime(dt) {
     // 允许：YYYY-MM-DD / YYYY-MM-DD HH:mm / YYYY-MM-DD HH:mm:ss / YYYYMMDDHHmm / YYYYMMDD
@@ -236,7 +240,6 @@ function formatDate(dateString) {
     if (!d) return dateString || '';
     return d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日';
 }
-
 
 function getTodayKeyByRange() {
     var now = new Date();
