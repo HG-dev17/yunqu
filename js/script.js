@@ -160,13 +160,14 @@ function fetchText(url, cb) {
     // Android 4.4 无 fetch，改用 XHR
     try {
         var xhr = new XMLHttpRequest();
-        // 添加随机参数强制刷新缓存
-        var cacheBuster = '?_=' + new Date().getTime();
+        // 添加多个随机参数确保不使用缓存
+        var cacheBuster = '?t=' + new Date().getTime() + '&r=' + Math.random();
         xhr.open('GET', url + cacheBuster, true);
         // 多重缓存控制
         xhr.setRequestHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
         xhr.setRequestHeader('Pragma', 'no-cache');
         xhr.setRequestHeader('Expires', '0');
+        xhr.setRequestHeader('If-Modified-Since', 'Sat, 1 Jan 2000 00:00:00 GMT');
         xhr.onreadystatechange = function () {
             if (xhr.readyState !== 4) return;
             if ((xhr.status >= 200 && xhr.status < 300) || xhr.status === 0) {
@@ -180,7 +181,6 @@ function fetchText(url, cb) {
         cb(e);
     }
 }
-
 
 function normalizeDateTime(dt) {
     // 允许：YYYY-MM-DD / YYYY-MM-DD HH:mm / YYYY-MM-DD HH:mm:ss / YYYYMMDDHHmm / YYYYMMDD
@@ -669,6 +669,12 @@ function resetScroll() {
 
 // 重新加载数据
 function reloadData() {
+    // 清空现有数据
+    allPraiseData = [];
+    allCriticismData = [];
+    filteredPraiseData = [];
+    filteredCriticismData = [];
+    
     loadSemesterConfig(function (err) {
         if (err) {
             console.error(err);
@@ -678,13 +684,13 @@ function reloadData() {
         loadSemesterRecords(selectedSemesterKey, function (err2) {
             if (err2) {
                 console.error(err2);
-                alert('重新加载失败：' + (err2.message || String(err2)));
+                alert('重新加载失败：' + (err2.meta ? err2.meta.message : err2.message || String(err2)));
                 return;
             }
             initSemesterFilter();
             semesterFilter.value = selectedSemesterKey;
             applyFilters();
-            alert('CSV数据已重新加载！\n奖: ' + allPraiseData.length + ' 条\n惩: ' + allCriticismData.length + ' 条');
+            alert('数据已重新加载！\n奖: ' + allPraiseData.length + ' 条\n惩: ' + allCriticismData.length + ' 条');
         });
     });
 }
