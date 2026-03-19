@@ -64,6 +64,16 @@
         return y + '-' + m + '-' + day + 'T' + h + ':' + min;
     }
 
+    function getNowDateTimeLocalValue() {
+        var d = new Date();
+        var y = d.getFullYear();
+        var m = (d.getMonth() + 1).toString().padStart(2, '0');
+        var day = d.getDate().toString().padStart(2, '0');
+        var h = d.getHours().toString().padStart(2, '0');
+        var min = d.getMinutes().toString().padStart(2, '0');
+        return y + '-' + m + '-' + day + 'T' + h + ':' + min;
+    }
+
     function updateCurrentTime() {
         var now = new Date();
         var y = now.getFullYear();
@@ -78,7 +88,7 @@
     updateCurrentTime();
 
     // 设置新建记录时间的默认值为现在
-    newDatetimeInput.value = new Date().toISOString().slice(0, 16);
+    newDatetimeInput.value = getNowDateTimeLocalValue();
 
     // 初始化学期列表
     function initSemesterSelect() {
@@ -535,7 +545,7 @@
         
         addRowModal.style.display = 'none';
         newRowForm.reset();
-        newDatetimeInput.value = new Date().toISOString().slice(0, 16);
+        newDatetimeInput.value = getNowDateTimeLocalValue();
     }
 
     // 事件绑定
@@ -549,13 +559,13 @@
         document.querySelector('.modal-close').addEventListener('click', function() {
             addRowModal.style.display = 'none';
             newRowForm.reset();
-            newDatetimeInput.value = new Date().toISOString().slice(0, 16);
+            newDatetimeInput.value = getNowDateTimeLocalValue();
         });
         
         cancelAddBtn.addEventListener('click', function() {
             addRowModal.style.display = 'none';
             newRowForm.reset();
-            newDatetimeInput.value = new Date().toISOString().slice(0, 16);
+            newDatetimeInput.value = getNowDateTimeLocalValue();
         });
         
         newRowForm.addEventListener('submit', function(e) {
