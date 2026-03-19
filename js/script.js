@@ -197,10 +197,38 @@ function normalizeDateTime(dt) {
 
 function toDate(dt) {
     var norm = normalizeDateTime(dt);
-    // Safari兼容：把 "YYYY-MM-DD HH:mm:ss" 转成 "YYYY-MM-DDTHH:mm:ss"
-    var isoLike = strIncludes(norm, ' ') ? norm.replace(' ', 'T') : norm;
-    var d = new Date(isoLike);
-    return isNaN(d.getTime()) ? null : d;
+    if (!norm) return null;
+    
+    // 尝试直接解析标准格式
+    var d;
+    try {
+        // Android 4.4 兼容：手动解析 YYYY-MM-DD HH:mm:ss 格式
+        var parts = norm.split(' ');
+        if (parts.length >= 2) {
+            var dateParts = parts[0].split('-');
+            var timeParts = parts[1].split(':');
+            if (dateParts.length === 3) {
+                var year = parseInt(dateParts[0], 10);
+                var month = parseInt(dateParts[1], 10) - 1; // 月份从0开始
+                var day = parseInt(dateParts[2], 10);
+                var hours = timeParts.length > 0 ? parseInt(timeParts[0], 10) : 0;
+                var minutes = timeParts.length > 1 ? parseInt(timeParts[1], 10) : 0;
+                var seconds = timeParts.length > 2 ? parseInt(timeParts[2], 10) : 0;
+                
+                d = new Date(year, month, day, hours, minutes, seconds);
+            }
+        }
+        
+        // 如果手动解析失败，尝试使用原生解析
+        if (!d || isNaN(d.getTime())) {
+            var isoLike = strIncludes(norm, ' ') ? norm.replace(' ', 'T') : norm;
+            d = new Date(isoLike);
+        }
+    } catch (e) {
+        d = null;
+    }
+    
+    return (d && !isNaN(d.getTime())) ? d : null;
 }
 
 function formatDate(dateString) {
@@ -208,6 +236,7 @@ function formatDate(dateString) {
     if (!d) return dateString || '';
     return d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日';
 }
+
 
 function getTodayKeyByRange() {
     var now = new Date();
