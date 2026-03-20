@@ -63,6 +63,27 @@
             </div>
 
             <div class="panel-section">
+                <h3><i class="fas fa-bullhorn"></i> 公告栏编辑</h3>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label for="announcementText">前台公告内容</label>
+                    <textarea id="announcementText" class="form-control" rows="4" placeholder="请输入要显示在前台的公告内容..."></textarea>
+                </div>
+
+                <div class="button-group">
+                    <button id="loadAnnouncementBtn" class="control-btn" title="重新加载公告文件">
+                        <i class="fas fa-sync-alt"></i> 重新加载公告
+                    </button>
+                    <button id="exportAnnouncementBtn" class="control-btn warning" title="导出公告修改文件以覆盖 CSV">
+                        <i class="fas fa-save"></i> 导出公告修改
+                    </button>
+                </div>
+
+                <div class="hint">
+                    <i class="fas fa-info-circle"></i> 修改公告后请点击“<strong>导出公告修改</strong>”，再手动替换 <strong>data/announcement.csv</strong>。
+                </div>
+            </div>
+
+            <div class="panel-section">
                 <h3><i class="fas fa-search"></i> 表格内筛选</h3>
                 <div class="control-group">
                     <input type="text" id="tableSearchInput" placeholder="在已加载的表格中筛选" class="search-box-input">

@@ -12,6 +12,7 @@
     var displayedRecords = [];     // 筛选后显示的数据
     var isDataModified = false;
     var selectedRowIds = new Set(); // 存储选中行的ID
+    var currentAnnouncementText = '';
 
     // DOM 元素
     var semesterSelect = document.getElementById('semesterSelect');
@@ -37,6 +38,9 @@
     var cancelAddBtn = document.getElementById('cancelAddBtn');
     var newDatetimeInput = document.getElementById('newDatetime');
     var currentTimeSpan = document.getElementById('currentTime');
+    var announcementText = document.getElementById('announcementText');
+    var loadAnnouncementBtn = document.getElementById('loadAnnouncementBtn');
+    var exportAnnouncementBtn = document.getElementById('exportAnnouncementBtn');
 
     // 工具函数
     function escapeHtml(str) {
@@ -121,6 +125,73 @@
                 loadCsvBtn.disabled = false;
             }
         });
+    }
+
+    function escapeCsvCell(cell) {
+        cell = String(cell == null ? '' : cell);
+        if (cell.indexOf(',') !== -1 || cell.indexOf('"') !== -1 || cell.indexOf('\n') !== -1 || cell.indexOf('\r') !== -1) {
+            return '"' + cell.replace(/"/g, '""') + '"';
+        }
+        return cell;
+    }
+
+    // 公告栏：从 data/announcement.csv 读取，并可导出覆盖修改后的文件
+    function loadAnnouncementCsv() {
+        if (!announcementText) return;
+
+        if (loadAnnouncementBtn) {
+            loadAnnouncementBtn.disabled = true;
+            loadAnnouncementBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 加载中...';
+        }
+
+        fetchText('data/announcement.csv', function(err, csvText) {
+            if (loadAnnouncementBtn) {
+                loadAnnouncementBtn.disabled = false;
+                loadAnnouncementBtn.innerHTML = '<i class="fas fa-sync-alt"></i> 重新加载公告';
+            }
+
+            if (err) {
+                console.error('公告栏加载失败:', err);
+                announcementText.value = '';
+                currentAnnouncementText = '';
+                return;
+            }
+
+            var rows = parseCSV(csvText);
+            var row0 = (rows && rows.length > 0) ? rows[0] : {};
+            var text = row0.text || row0.announcement || row0.content || '';
+            text = (text == null) ? '' : String(text);
+
+            announcementText.value = text;
+            currentAnnouncementText = text;
+        });
+    }
+
+    function exportAnnouncementToCsv() {
+        if (!announcementText) return;
+
+        var txt = String(announcementText.value || '');
+
+        var csvContent = 'text\r\n';
+        csvContent += escapeCsvCell(txt) + '\r\n';
+
+        var BOM = '\uFEFF';
+        var blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+        var url = URL.createObjectURL(blob);
+
+        var timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+        var filename = 'announcement_modified_' + timestamp + '.csv';
+
+        var link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', filename);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        currentAnnouncementText = txt;
+        alert('公告已导出: ' + filename + '\n请用此文件手动替换 data/announcement.csv');
     }
 
     // 加载CSV数据
@@ -330,84 +401,6 @@
                 actionCell.querySelector('.delete').style.display = 'none';
             });
         }
-        
-        // 保存单元格编辑
-        tableBody.addEventListener('click', function(e) {
-            if (e.target.classList.contains('save')) {
-                var row = e.target.closest('tr');
-                var id = row.getAttribute('data-id');
-                var record = findRecordById(id);
-                if (!record) return;
-                
-                var cells = row.querySelectorAll('.editable-cell.editing');
-                for (var k = 0; k < cells.length; k++) {
-                    var cell = cells[k];
-                    var field = cell.getAttribute('data-field');
-                    var editInput = cell.querySelector('.cell-edit');
-                    var newValue = editInput ? editInput.value : '';
-                    
-                    if (field === 'datetime') {
-                        newValue = normalizeDateTime(newValue);
-                    }
-                    
-                    if (record[field] !== newValue) {
-                        record[field] = newValue;
-                        isDataModified = true;
-                        updateModificationStatus();
-                    }
-                    
-                    cell.classList.remove('editing');
-                    cell.querySelector('.cell-display').textContent = field === 'detail' && newValue.length > 60 ? 
-                        newValue.substring(0, 60) + '...' : newValue;
-                }
-                
-                // 隐藏保存/取消按钮，显示删除按钮
-                var actionCell = row.querySelector('.action-buttons');
-                actionCell.querySelector('.save').style.display = 'none';
-                actionCell.querySelector('.cancel').style.display = 'none';
-                actionCell.querySelector('.delete').style.display = 'inline-flex';
-                
-                renderTable(); // 重新渲染以更新显示
-            }
-            
-            // 取消编辑
-            if (e.target.classList.contains('cancel')) {
-                var row = e.target.closest('tr');
-                var cells = row.querySelectorAll('.editable-cell.editing');
-                for (var m = 0; m < cells.length; m++) {
-                    cells[m].classList.remove('editing');
-                }
-                
-                var actionCell = row.querySelector('.action-buttons');
-                actionCell.querySelector('.save').style.display = 'none';
-                actionCell.querySelector('.cancel').style.display = 'none';
-                actionCell.querySelector('.delete').style.display = 'inline-flex';
-            }
-            
-            // 删除单行
-            if (e.target.classList.contains('delete')) {
-                var row = e.target.closest('tr');
-                var id = row.getAttribute('data-id');
-                if (confirm('确定要删除这条记录吗？')) {
-                    deleteRecordById(id);
-                }
-            }
-        });
-        
-        // 输入框按Enter保存，Esc取消
-        tableBody.addEventListener('keydown', function(e) {
-            if (e.target.classList.contains('cell-edit')) {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    var saveBtn = e.target.closest('tr').querySelector('.action-btn.save');
-                    if (saveBtn) saveBtn.click();
-                }
-                if (e.key === 'Escape') {
-                    var cancelBtn = e.target.closest('tr').querySelector('.action-btn.cancel');
-                    if (cancelBtn) cancelBtn.click();
-                }
-            }
-        });
     }
 
     // 查找记录
@@ -652,12 +645,99 @@
             renderTable();
             deleteSelectedBtn.disabled = !isChecked;
         });
+
+        // 公告栏
+        if (loadAnnouncementBtn) loadAnnouncementBtn.addEventListener('click', loadAnnouncementCsv);
+        if (exportAnnouncementBtn) exportAnnouncementBtn.addEventListener('click', exportAnnouncementToCsv);
+
+        // 行内保存/取消/删除（事件委托：只绑定一次，避免重复弹窗确认）
+        tableBody.addEventListener('click', function(e) {
+            if (!e.target || !e.target.classList) return;
+
+            if (e.target.classList.contains('save')) {
+                var row = e.target.closest('tr');
+                var id = row.getAttribute('data-id');
+                var record = findRecordById(id);
+                if (!record) return;
+
+                var cells = row.querySelectorAll('.editable-cell.editing');
+                for (var k = 0; k < cells.length; k++) {
+                    var cell = cells[k];
+                    var field = cell.getAttribute('data-field');
+                    var editInput = cell.querySelector('.cell-edit');
+                    var newValue = editInput ? editInput.value : '';
+
+                    if (field === 'datetime') {
+                        newValue = normalizeDateTime(newValue);
+                    }
+
+                    if (record[field] !== newValue) {
+                        record[field] = newValue;
+                        isDataModified = true;
+                        updateModificationStatus();
+                    }
+
+                    cell.classList.remove('editing');
+                    cell.querySelector('.cell-display').textContent = field === 'detail' && newValue.length > 60 ?
+                        newValue.substring(0, 60) + '...' : newValue;
+                }
+
+                // 隐藏保存/取消按钮，显示删除按钮
+                var actionCell = row.querySelector('.action-buttons');
+                actionCell.querySelector('.save').style.display = 'none';
+                actionCell.querySelector('.cancel').style.display = 'none';
+                actionCell.querySelector('.delete').style.display = 'inline-flex';
+
+                renderTable(); // 重新渲染以更新显示
+            }
+
+            // 取消编辑
+            if (e.target.classList.contains('cancel')) {
+                var row = e.target.closest('tr');
+                var cells = row.querySelectorAll('.editable-cell.editing');
+                for (var m = 0; m < cells.length; m++) {
+                    cells[m].classList.remove('editing');
+                }
+
+                var actionCell = row.querySelector('.action-buttons');
+                actionCell.querySelector('.save').style.display = 'none';
+                actionCell.querySelector('.cancel').style.display = 'none';
+                actionCell.querySelector('.delete').style.display = 'inline-flex';
+            }
+
+            // 删除单行
+            if (e.target.classList.contains('delete')) {
+                var row = e.target.closest('tr');
+                var id = row.getAttribute('data-id');
+                if (confirm('确定要删除这条记录吗？')) {
+                    deleteRecordById(id);
+                }
+            }
+        });
+
+        // 输入框按Enter保存，Esc取消
+        tableBody.addEventListener('keydown', function(e) {
+            if (!e.target || !e.target.classList) return;
+
+            if (e.target.classList.contains('cell-edit')) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    var saveBtn = e.target.closest('tr').querySelector('.action-btn.save');
+                    if (saveBtn) saveBtn.click();
+                }
+                if (e.key === 'Escape') {
+                    var cancelBtn = e.target.closest('tr').querySelector('.action-btn.cancel');
+                    if (cancelBtn) cancelBtn.click();
+                }
+            }
+        });
     }
 
     // 初始化
     function init() {
         initSemesterSelect();
         bindEvents();
+        loadAnnouncementCsv(); // 初始化公告栏内容
         console.log('管理后台初始化完成 (本地模式)');
     }
 

@@ -29,6 +29,8 @@ var currentTimeElement = document.getElementById('currentTime');
 var loadDataBtn = document.getElementById('loadDataBtn');
 var showCurrentSemesterBtn = document.getElementById('showCurrentSemesterBtn');
 var semesterInfoDisplay = document.getElementById('semesterInfoDisplay');
+var announcementBar = document.getElementById('announcementBar');
+var announcementText = document.getElementById('announcementText');
 
 // 滚动相关变量
 var isScrolling = true;
@@ -200,39 +202,47 @@ function normalizeDateTime(dt) {
 }
 
 function toDate(dt) {
+    // Android 4.4 对 `YYYY-MM-DD` / `YYYY-MM-DDTHH:mm` 解析存在时区偏移差异，
+    // 这里统一“手动按本地时间”解析，保证不同设备显示一致。
     var norm = normalizeDateTime(dt);
     if (!norm) return null;
-    
-    // 尝试直接解析标准格式
-    var d;
-    try {
-        // Android 4.4 兼容：手动解析 YYYY-MM-DD HH:mm:ss 格式
-        var parts = norm.split(' ');
-        if (parts.length >= 2) {
-            var dateParts = parts[0].split('-');
-            var timeParts = parts[1].split(':');
-            if (dateParts.length === 3) {
-                var year = parseInt(dateParts[0], 10);
-                var month = parseInt(dateParts[1], 10) - 1; // 月份从0开始
-                var day = parseInt(dateParts[2], 10);
-                var hours = timeParts.length > 0 ? parseInt(timeParts[0], 10) : 0;
-                var minutes = timeParts.length > 1 ? parseInt(timeParts[1], 10) : 0;
-                var seconds = timeParts.length > 2 ? parseInt(timeParts[2], 10) : 0;
-                
-                d = new Date(year, month, day, hours, minutes, seconds);
-            }
-        }
-        
-        // 如果手动解析失败，尝试使用原生解析
-        if (!d || isNaN(d.getTime())) {
-            var isoLike = strIncludes(norm, ' ') ? norm.replace(' ', 'T') : norm;
-            d = new Date(isoLike);
-        }
-    } catch (e) {
-        d = null;
+
+    norm = String(norm).trim();
+    // 兼容可能的 T 分隔符
+    norm = norm.replace('T', ' ');
+
+    // 支持：
+    // 1) YYYY-MM-DD
+    // 2) YYYY-MM-DD HH:mm
+    // 3) YYYY-MM-DD HH:mm:ss
+    var m = /^(\d{4})-(\d{2})-(\d{2})(?:\s+(\d{2}):(\d{2})(?::(\d{2}))?)?$/.exec(norm);
+    if (!m) {
+        // 最后兜底：尝试原生解析（可能仍有平台差异，但用于非常规输入）
+        var fallback = new Date(norm);
+        return (!isNaN(fallback.getTime())) ? fallback : null;
     }
-    
-    return (d && !isNaN(d.getTime())) ? d : null;
+
+    var year = parseInt(m[1], 10);
+    var month = parseInt(m[2], 10) - 1;
+    var day = parseInt(m[3], 10);
+    var hours = m[4] != null ? parseInt(m[4], 10) : 0;
+    var minutes = m[5] != null ? parseInt(m[5], 10) : 0;
+    var seconds = m[6] != null ? parseInt(m[6], 10) : 0;
+
+    return new Date(year, month, day, hours, minutes, seconds);
+}
+
+function isDateOnlyString(dt) {
+    var norm = normalizeDateTime(dt);
+    if (!norm) return false;
+    return /^\d{4}-\d{2}-\d{2}$/.test(String(norm).trim());
+}
+
+function toEndOfDay(dt) {
+    var d = toDate(dt);
+    if (!d) return null;
+    d.setHours(23, 59, 59, 999);
+    return d;
 }
 
 function formatDate(dateString) {
@@ -246,9 +256,10 @@ function getTodayKeyByRange() {
     for (var key in semesterConfig) {
         if (!hasOwn(semesterConfig, key)) continue;
         var sem = semesterConfig[key];
-        var s = new Date(sem.start_date);
-        var e = new Date(sem.end_date);
-        if (!isNaN(s.getTime()) && !isNaN(e.getTime()) && now >= s && now <= e) return key;
+        var s2 = toDate(sem.start_date);
+        var e2 = toDate(sem.end_date);
+        if (isDateOnlyString(sem.end_date)) e2 = toEndOfDay(sem.end_date);
+        if (s2 && e2 && now >= s2 && now <= e2) return key;
     }
     return null;
 }
@@ -285,6 +296,32 @@ function loadSemesterConfig(cb) {
         }
         semesterConfig = cfg;
         cb(null);
+    });
+}
+
+function loadAnnouncementCsv(cb) {
+    if (!announcementBar || !announcementText) {
+        if (cb) cb();
+        return;
+    }
+
+    fetchText('data/announcement.csv', function (err, csvText) {
+        if (err) {
+            console.warn('公告栏加载失败:', err);
+            announcementBar.style.display = 'none';
+            if (cb) cb(err);
+            return;
+        }
+
+        var rows = parseCSV(csvText);
+        var row0 = (rows && rows.length > 0) ? rows[0] : {};
+        var text = row0.text || row0.announcement || row0.content || '';
+        text = (text == null) ? '' : String(text);
+
+        announcementText.textContent = text.trim() ? text : '暂无公告';
+        announcementBar.style.display = 'block';
+
+        if (cb) cb(null);
     });
 }
 
@@ -331,11 +368,12 @@ function init() {
     loadSemesterConfig(function (err) {
         if (err) {
             console.error(err);
-            showError('外部CSV加载失败', '请用本地HTTP服务器打开（不要直接 file://）。Android 4.4 也需要通过 HTTP 才更稳定。');
+            showError('外部数据加载失败', '请用本地HTTP服务器打开（不要直接 file://）。Android 4.4 也需要通过 HTTP 才更稳定。');
             return;
         }
 
         initSemesterFilter();
+        loadAnnouncementCsv(function () { /* 不阻塞后续数据加载 */ });
 
         var todayKey = getTodayKeyByRange() || 'current_semester';
         var firstKey = null;
@@ -346,7 +384,7 @@ function init() {
         loadSemesterRecords(selectedSemesterKey, function (err2) {
             if (err2) {
                 console.error(err2);
-                showError('外部CSV加载失败', err2.message || String(err2));
+                showError('外部数据加载失败', err2.message || String(err2));
                 return;
             }
 
@@ -558,11 +596,13 @@ function applyFilters() {
             startDate = new Date(now);
             startDate.setMonth(now.getMonth() - 1);
         } else if (dateFilterValue === 'current_semester' && semesterConfig.current_semester) {
-            startDate = new Date(semesterConfig.current_semester.start_date);
-            endDate = new Date(semesterConfig.current_semester.end_date);
+            startDate = toDate(semesterConfig.current_semester.start_date);
+            endDate = toDate(semesterConfig.current_semester.end_date);
+            if (isDateOnlyString(semesterConfig.current_semester.end_date)) endDate = toEndOfDay(semesterConfig.current_semester.end_date);
         } else if (dateFilterValue === 'last_semester' && semesterConfig.last_semester) {
-            startDate = new Date(semesterConfig.last_semester.start_date);
-            endDate = new Date(semesterConfig.last_semester.end_date);
+            startDate = toDate(semesterConfig.last_semester.start_date);
+            endDate = toDate(semesterConfig.last_semester.end_date);
+            if (isDateOnlyString(semesterConfig.last_semester.end_date)) endDate = toEndOfDay(semesterConfig.last_semester.end_date);
         }
 
         var p4 = [];

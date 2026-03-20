@@ -146,6 +146,32 @@ h1:after {
     font-size: 1.1rem;
 }
 
+.announcement-bar {
+    background-color: white;
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-bottom: 30px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    border-left: 5px solid #3498db;
+}
+
+.announcement-title {
+    color: #2c3e50;
+    font-weight: 800;
+    font-size: 1.15rem;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.announcement-text {
+    color: #34495e;
+    font-size: 1rem;
+    white-space: pre-wrap; /* 支持公告内容换行 */
+    line-height: 1.6;
+}
+
 .content-area {
     display: flex;
     flex-wrap: wrap;
