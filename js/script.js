@@ -18,6 +18,7 @@ var praiseCount = document.getElementById('praiseCount');
 var criticismCount = document.getElementById('criticismCount');
 var searchInput = document.getElementById('searchInput');
 var searchBtn = document.getElementById('searchBtn');
+var gradeFilter = document.getElementById('gradeFilter');
 var filterType = document.getElementById('filterType');
 var dateFilter = document.getElementById('dateFilter');
 var semesterFilter = document.getElementById('semesterFilter');
@@ -344,6 +345,7 @@ function loadSemesterRecords(semesterKey, cb) {
                 method: r.method || '',
                 points: r.points || '',
                 status: r.status || '',
+                grade: r.grade || '',
                 semester: semesterKey,
                 semesterName: sem.name
             });
@@ -402,6 +404,7 @@ function init() {
         if (key === 'Enter' || key === 13) handleSearch();
     });
 
+    gradeFilter.addEventListener('change', handleFilter);
     filterType.addEventListener('change', handleFilter);
     dateFilter.addEventListener('change', handleFilter);
     semesterFilter.addEventListener('change', function () {
@@ -529,6 +532,7 @@ function handleFilter() {
 
 // 应用筛选
 function applyFilters() {
+    var gradeFilterValue = gradeFilter.value;
     var typeFilterValue = filterType.value;
     var dateFilterValue = dateFilter.value;
     var semesterFilterValue = semesterFilter.value;
@@ -565,6 +569,34 @@ function applyFilters() {
         filteredCriticism = c2;
     }
     
+    // 应用年级筛选
+    if (gradeFilterValue !== 'all') {
+        var gradeMap = {
+            'grade1': '初一',
+            'grade2': '初二',
+            'grade3': '初三'
+        };
+        var targetGrade = gradeMap[gradeFilterValue] || '';
+
+        var pGrade = [];
+        for (var i = 0; i < filteredPraise.length; i++) {
+            var item = filteredPraise[i];
+            if (item.grade === targetGrade) {
+                pGrade.push(item);
+            }
+        }
+        filteredPraise = pGrade;
+
+        var cGrade = [];
+        for (var j = 0; j < filteredCriticism.length; j++) {
+            var itemc = filteredCriticism[j];
+            if (itemc.grade === targetGrade) {
+                cGrade.push(itemc);
+            }
+        }
+        filteredCriticism = cGrade;
+    }
+
     // 应用类型筛选
     if (typeFilterValue === 'praise') {
         filteredCriticism = [];

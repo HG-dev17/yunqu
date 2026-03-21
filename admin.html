@@ -12,7 +12,7 @@
     <div class="container">
         <header>
             <h1><i class="fas fa-database"></i> 数据管理后台</h1>
-            <p class="subtitle">云衢中学初二年级部 - 本地编辑模式</p>
+            <p class="subtitle">云衢中学 - 本地编辑模式</p>
             <p class="subtitle">
                 <a href="index.html"><i class="fas fa-home"></i> 返回主系统</a> |
                 <a href="all_semesters.html"><i class="fas fa-layer-group"></i> 查看汇总</a>
@@ -86,6 +86,12 @@
             <div class="panel-section">
                 <h3><i class="fas fa-search"></i> 表格内筛选</h3>
                 <div class="control-group">
+                    <select class="filter-select" id="adminGradeFilter">
+                        <option value="all">全部年级</option>
+                        <option value="初一">初一</option>
+                        <option value="初二">初二</option>
+                        <option value="初三">初三</option>
+                    </select>
                     <input type="text" id="tableSearchInput" placeholder="在已加载的表格中筛选" class="search-box-input">
                     <button id="clearSearchBtn" class="control-btn">
                         <i class="fas fa-times"></i> 清空
@@ -116,6 +122,7 @@
                     <thead>
                         <tr>
                             <th width="40px"><input type="checkbox" id="masterCheckbox"></th>
+                            <th width="60px">年级</th>
                             <th width="60px">类型</th>
                             <th width="120px">人物</th>
                             <th>事项</th>
@@ -130,7 +137,7 @@
                     <tbody id="tableBody">
                         <!-- 数据行将通过JS动态生成 -->
                         <tr id="noDataRow">
-                            <td colspan="10" style="text-align: center; padding: 40px; color: #7f8c8d;">
+                            <td colspan="11" style="text-align: center; padding: 40px; color: #7f8c8d;">
                                 <i class="fas fa-database fa-2x" style="margin-bottom: 10px; display: block;"></i>
                                 请先选择学期文件并点击“加载”。
                             </td>
@@ -150,6 +157,15 @@
                 <div class="modal-body">
                     <form id="newRowForm">
                         <div class="form-row">
+                            <div class="form-group">
+                                <label for="newGrade">年级 <span class="required">*</span></label>
+                                <select id="newGrade" class="form-control" required>
+                                    <option value="">请选择年级</option>
+                                    <option value="初一">初一</option>
+                                    <option value="初二">初二</option>
+                                    <option value="初三">初三</option>
+                                </select>
+                            </div>
                             <div class="form-group">
                                 <label for="newType">类型 <span class="required">*</span></label>
                                 <select id="newType" class="form-control" required>

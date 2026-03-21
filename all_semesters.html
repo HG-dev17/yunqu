@@ -23,7 +23,14 @@
                 </button>
             </div>
 
-            <div class="filter-controls" style="flex-wrap: wrap;">
+            <div class="filter-controls" style="flex-wrap: wrap; margin-top: 15px;">
+                <select class="filter-select" id="gradeFilterAll">
+                    <option value="all">全部年级</option>
+                    <option value="初一">初一</option>
+                    <option value="初二">初二</option>
+                    <option value="初三">初三</option>
+                </select>
+
                 <select class="filter-select" id="typeFilter">
                     <option value="all">全部类型</option>
                     <option value="奖">仅奖励(奖)</option>
@@ -71,6 +78,7 @@
             <table class="records-table">
                 <thead>
                     <tr>
+                        <th>年级</th>
                         <th>学期</th>
                         <th>类型</th>
                         <th>人物</th>

@@ -26,6 +26,7 @@
     var saveChangesBtn = document.getElementById('saveChangesBtn');
     var resetBtn = document.getElementById('resetBtn');
     var tableSearchInput = document.getElementById('tableSearchInput');
+    var adminGradeFilter = document.getElementById('adminGradeFilter');
     var clearSearchBtn = document.getElementById('clearSearchBtn');
     var masterCheckbox = document.getElementById('masterCheckbox');
     var selectAllCheckbox = document.getElementById('selectAllCheckbox');
@@ -51,6 +52,12 @@
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#39;');
+    }
+
+    function strIncludes(hay, needle) {
+        hay = String(hay == null ? '' : hay);
+        needle = String(needle == null ? '' : needle);
+        return hay.indexOf(needle) !== -1;
     }
 
     function generateId() {
@@ -236,6 +243,13 @@
             
             for (var i = 0; i < rows.length; i++) {
                 var r = rows[i];
+                var grade = r.grade || '';
+                // 如果没有年级字段，尝试从人物字段中提取
+                if (!grade && r.person) {
+                    if (strIncludes(r.person, '初一')) grade = '初一';
+                    else if (strIncludes(r.person, '初二')) grade = '初二';
+                    else if (strIncludes(r.person, '初三')) grade = '初三';
+                }
                 var record = {
                     _id: r.id || generateId(), // 内部ID，用于追踪
                     type: r.type || '',
@@ -245,7 +259,8 @@
                     admin: r.admin || r.teacher || '',
                     method: r.method || '',
                     points: r.points || '',
-                    status: r.status || ''
+                    status: r.status || '',
+                    grade: grade
                 };
                 allRecords.push(record);
             }
@@ -269,7 +284,7 @@
     // 渲染表格
     function renderTable() {
         if (displayedRecords.length === 0) {
-            tableBody.innerHTML = '<tr id="noDataRow"><td colspan="10" style="text-align: center; padding: 40px; color: #7f8c8d;"><i class="fas fa-search fa-2x" style="margin-bottom: 10px; display: block;"></i>无匹配记录</td></tr>';
+            tableBody.innerHTML = '<tr id="noDataRow"><td colspan="11" style="text-align: center; padding: 40px; color: #7f8c8d;"><i class="fas fa-search fa-2x" style="margin-bottom: 10px; display: block;"></i>无匹配记录</td></tr>';
             visibleCountSpan.textContent = '0';
             masterCheckbox.checked = false;
             selectAllCheckbox.checked = false;
@@ -288,6 +303,12 @@
             // 复选框列
             html += '<td><input type="checkbox" class="row-checkbox" ' + (isSelected ? 'checked' : '') + '></td>';
             
+            // 年级
+            html += '<td class="editable-cell" data-field="grade">';
+            html += '<div class="cell-display">' + escapeHtml(r.grade) + '</div>';
+            html += '<select class="cell-edit"><option value=""' + (!r.grade ? ' selected' : '') + '></option><option value="初一"' + (r.grade === '初一' ? ' selected' : '') + '>初一</option><option value="初二"' + (r.grade === '初二' ? ' selected' : '') + '>初二</option><option value="初三"' + (r.grade === '初三' ? ' selected' : '') + '>初三</option></select>';
+            html += '</td>';
+
             // 类型
             html += '<td class="editable-cell" data-field="type">';
             html += '<div class="cell-display">' + escapeHtml(r.type) + '</div>';
@@ -445,18 +466,31 @@
     // 表格内筛选
     function applyTableFilter() {
         var searchTerm = (tableSearchInput.value || '').trim().toLowerCase();
-        if (!searchTerm) {
-            displayedRecords = allRecords.slice();
-        } else {
-            displayedRecords = [];
-            for (var i = 0; i < allRecords.length; i++) {
-                var r = allRecords[i];
-                var hay = (r.person + ' ' + r.detail + ' ' + r.admin + ' ' + r.method + ' ' + r.status + ' ' + r.type).toLowerCase();
-                if (hay.indexOf(searchTerm) !== -1) {
-                    displayedRecords.push(r);
+        var gradeFilterValue = adminGradeFilter.value;
+
+        displayedRecords = [];
+
+        for (var i = 0; i < allRecords.length; i++) {
+            var r = allRecords[i];
+
+            // 应用年级筛选
+            if (gradeFilterValue !== 'all') {
+                if (r.grade !== gradeFilterValue) {
+                    continue;
                 }
             }
+
+            // 应用搜索筛选
+            if (searchTerm) {
+                var hay = (r.person + ' ' + r.detail + ' ' + r.admin + ' ' + r.method + ' ' + r.status + ' ' + r.type).toLowerCase();
+                if (hay.indexOf(searchTerm) === -1) {
+                    continue;
+                }
+            }
+
+            displayedRecords.push(r);
         }
+
         loadedCountSpan.textContent = allRecords.length;
     }
 
@@ -518,6 +552,7 @@
     function addNewRecord(formData) {
         var newRecord = {
             _id: generateId(),
+            grade: (formData.grade || '').trim(),
             type: formData.type || '奖',
             person: (formData.person || '').trim(),
             detail: (formData.detail || '').trim(),
@@ -564,6 +599,7 @@
         newRowForm.addEventListener('submit', function(e) {
             e.preventDefault();
             var formData = {
+                grade: document.getElementById('newGrade').value,
                 type: document.getElementById('newType').value,
                 person: document.getElementById('newPerson').value,
                 detail: document.getElementById('newDetail').value,
@@ -574,6 +610,11 @@
                 status: document.getElementById('newStatus').value
             };
             
+            if (!formData.grade.trim()) {
+                alert('请选择年级');
+                return;
+            }
+
             if (!formData.person.trim()) {
                 alert('请填写人物姓名');
                 return;
@@ -610,6 +651,11 @@
         });
         
         tableSearchInput.addEventListener('input', function() {
+            applyTableFilter();
+            renderTable();
+        });
+
+        adminGradeFilter.addEventListener('change', function() {
             applyTableFilter();
             renderTable();
         });

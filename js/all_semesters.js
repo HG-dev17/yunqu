@@ -5,6 +5,7 @@ var filteredRecords = [];
 
 var globalSearchInput = document.getElementById('globalSearchInput');
 var globalSearchBtn = document.getElementById('globalSearchBtn');
+var gradeFilterAll = document.getElementById('gradeFilterAll');
 var typeFilter = document.getElementById('typeFilter');
 var semesterFilterAll = document.getElementById('semesterFilterAll');
 var adminFilter = document.getElementById('adminFilter');
@@ -163,8 +164,10 @@ function renderTable(records) {
     for (var i = 0; i < records.length; i++) {
         var r = records[i];
         var dt = normalizeDateTime(r.datetime);
+        var grade = r.grade || '';
         html += ''
             + '<tr>'
+            + '<td>' + escapeHtml(grade) + '</td>'
             + '<td>' + escapeHtml(r.semesterName || r.semester) + '</td>'
             + '<td>' + escapeHtml(r.type) + '</td>'
             + '<td>' + escapeHtml(r.person) + '</td>'
@@ -223,6 +226,7 @@ function refreshDynamicFilters() {
 
 function applyFilters() {
     var q = (globalSearchInput.value || '').trim().toLowerCase();
+    var grade = gradeFilterAll.value;
     var type = typeFilter.value;
     var sem = semesterFilterAll.value;
     var admin = adminFilter.value;
@@ -232,6 +236,16 @@ function applyFilters() {
     var end = endDateInput.value ? new Date(endDateInput.value) : null;
 
     var arr = allRecords.slice();
+
+    if (grade !== 'all') {
+        var g2 = [];
+        for (var i = 0; i < arr.length; i++) {
+            if (arr[i].grade === grade) {
+                g2.push(arr[i]);
+            }
+        }
+        arr = g2;
+    }
 
     if (type !== 'all') {
         var t2 = [];
@@ -350,6 +364,7 @@ function loadAll(cb) {
                         var rows = parseCSV(csv);
                         for (var j = 0; j < rows.length; j++) {
                             var rr = rows[j] || {};
+                            var grade = rr.grade || '';
                             allRecords.push({
                                 id: rr.id || '',
                                 type: rr.type || '',
@@ -360,6 +375,7 @@ function loadAll(cb) {
                                 method: rr.method || '',
                                 points: rr.points || '',
                                 status: rr.status || '',
+                                grade: grade,
                                 semester: sem.key,
                                 semesterName: sem.name
                             });
@@ -386,11 +402,12 @@ function bindEvents() {
         var key = e && (e.key || e.keyCode);
         if (key === 'Enter' || key === 13) applyFilters();
     });
-    [typeFilter, semesterFilterAll, adminFilter, methodFilter, statusFilter, startDateInput, endDateInput]
+    [gradeFilterAll, typeFilter, semesterFilterAll, adminFilter, methodFilter, statusFilter, startDateInput, endDateInput]
         .forEach(function (el) { el.addEventListener('change', applyFilters); });
 
     resetFiltersBtn.addEventListener('click', function () {
         globalSearchInput.value = '';
+        gradeFilterAll.value = 'all';
         typeFilter.value = 'all';
         semesterFilterAll.value = 'all';
         adminFilter.value = 'all';
