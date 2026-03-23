@@ -2,6 +2,39 @@
 // - data/semesters.csv：学期索引（key,name,start_date,end_date,file）
 // - data/<semester>.csv：每学期一个记录CSV（建议字段：id,type,person,detail,datetime,admin,method,points,status）
 // 为兼容 Android 4.4：本文件使用 ES5 语法 + XHR（不使用 fetch/Promise/async/await）
+
+// 简单的Android 4.4兼容性处理
+if (!Array.prototype.forEach) {
+    Array.prototype.forEach = function(callback, thisArg) {
+        var T, k;
+        if (this == null) {
+            throw new TypeError(' this is null or not defined');
+        }
+        var O = Object(this);
+        var len = O.length >>> 0;
+        if (typeof callback !== "function") {
+            throw new TypeError(callback + ' is not a function');
+        }
+        if (arguments.length > 1) {
+            T = thisArg;
+        }
+        k = 0;
+        while (k < len) {
+            var kValue;
+            if (k in O) {
+                kValue = O[k];
+                callback.call(T, kValue, k, O);
+            }
+            k++;
+        }
+    };
+}
+
+if (!String.prototype.trim) {
+    String.prototype.trim = function() {
+        return this.replace(/^\s+|\s+$/g, '');
+    };
+}
 var semesterConfig = {};
 var selectedSemesterKey = 'all';
 
@@ -161,22 +194,38 @@ function fetchText(url, cb) {
     try {
         var xhr = new XMLHttpRequest();
         var cacheBuster = '?t=' + new Date().getTime() + '&r=' + Math.random();
-        xhr.open('GET', url + cacheBuster, true);
-        xhr.setRequestHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-        xhr.setRequestHeader('Pragma', 'no-cache');
-        xhr.setRequestHeader('Expires', '0');
-        xhr.setRequestHeader('If-Modified-Since', 'Sat, 1 Jan 2000 00:00:00 GMT');
+        
+        // Android 4.4兼容处理：简化请求头设置
+        try {
+            xhr.open('GET', url + cacheBuster, true);
+            xhr.setRequestHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+            xhr.setRequestHeader('Pragma', 'no-cache');
+            xhr.setRequestHeader('Expires', '0');
+        } catch (e) {
+            // 如果设置请求头失败，尝试不设置请求头
+            xhr.open('GET', url + cacheBuster, true);
+        }
+        
         xhr.onreadystatechange = function () {
             if (xhr.readyState !== 4) return;
-            if ((xhr.status >= 200 && xhr.status < 300) || xhr.status === 0) {
-                cb(null, xhr.responseText);
-            } else {
-                cb(new Error('HTTP ' + xhr.status + ' ' + (xhr.statusText || '')));
+            try {
+                if ((xhr.status >= 200 && xhr.status < 300) || xhr.status === 0) {
+                    cb(null, xhr.responseText);
+                } else {
+                    cb(new Error('HTTP ' + xhr.status + ' ' + (xhr.statusText || '')));
+                }
+            } catch (e) {
+                cb(new Error("处理响应时出错: " + e.message));
             }
         };
-        xhr.send(null);
+        
+        try {
+            xhr.send(null);
+        } catch (e) {
+            cb(new Error("发送请求失败: " + e.message));
+        }
     } catch (e) {
-        cb(e);
+        cb(new Error("创建请求时出错: " + e.message));
     }
 }
 
@@ -333,40 +382,69 @@ function loadAnnouncementCsv(cb) {
 }
 
 function loadSemesterRecords(semesterKey, cb) {
-    var sem = semesterConfig[semesterKey];
-    if (!sem || !sem.file) return cb(new Error('学期配置缺少file：' + semesterKey));
-    fetchText('data/' + sem.file, function (err, csv) {
-        if (err) return cb(err);
-        var parsed = parseCSV(csv);
-        var rows = [];
-        for (var i = 0; i < parsed.length; i++) {
-            var r = parsed[i] || {};
-            rows.push({
-                id: r.id || '',
-                type: r.type || '',
-                person: r.person || '',
-                detail: r.detail || '',
-                datetime: normalizeDateTime(r.datetime || r.date || ''),
-                admin: r.admin || r.teacher || '',
-                method: r.method || '',
-                points: r.points || '',
-                status: r.status || '',
-                grade: r.grade || '',
-                semester: semesterKey,
-                semesterName: sem.name
-            });
+    // Android 4.4兼容处理：添加错误检查和详细日志
+    try {
+        var sem = semesterConfig[semesterKey];
+        if (!sem || !sem.file) {
+            var errorMsg = '学期配置缺少file：' + semesterKey;
+            console.error(errorMsg);
+            return cb(new Error(errorMsg));
         }
-        allPraiseData = [];
-        allCriticismData = [];
-        for (var j = 0; j < rows.length; j++) {
-            var item = rows[j];
-            var t = (item.type || '');
-            var tl = (t && t.toLowerCase) ? t.toLowerCase() : t;
-            if (t === '奖' || tl === 'praise') allPraiseData.push(item);
-            else if (t === '惩' || tl === 'criticism') allCriticismData.push(item);
-        }
-        cb(null);
-    });
+        
+        var url = 'data/' + sem.file;
+        console.log("正在加载学期数据:", url);
+        
+        fetchText(url, function (err, csv) {
+            if (err) {
+                console.error("加载学期数据失败:", err);
+                return cb(err);
+            }
+            
+            try {
+                var parsed = parseCSV(csv);
+                console.log("解析CSV数据成功，记录数:", parsed.length);
+                
+                var rows = [];
+                for (var i = 0; i < parsed.length; i++) {
+                    var r = parsed[i] || {};
+                    rows.push({
+                        id: r.id || '',
+                        type: r.type || '',
+                        person: r.person || '',
+                        detail: r.detail || '',
+                        datetime: normalizeDateTime(r.datetime || r.date || ''),
+                        admin: r.admin || r.teacher || '',
+                        method: r.method || '',
+                        points: r.points || '',
+                        status: r.status || '',
+                        grade: r.grade || '',
+                        semester: semesterKey,
+                        semesterName: sem.name
+                    });
+                }
+                
+                allPraiseData = [];
+                allCriticismData = [];
+                
+                for (var j = 0; j < rows.length; j++) {
+                    var item = rows[j];
+                    var t = (item.type || '');
+                    var tl = (t && t.toLowerCase) ? t.toLowerCase() : t;
+                    if (t === '奖' || tl === 'praise') allPraiseData.push(item);
+                    else if (t === '惩' || tl === 'criticism') allCriticismData.push(item);
+                }
+                
+                console.log("学期数据加载完成 - 表彰:", allPraiseData.length, "条, 批评:", allCriticismData.length, "条");
+                cb(null);
+            } catch (e) {
+                console.error("处理学期数据时出错:", e);
+                cb(new Error("处理学期数据时出错: " + e.message));
+            }
+        });
+    } catch (e) {
+        console.error("加载学期记录失败:", e);
+        cb(new Error("加载学期记录失败: " + e.message));
+    }
 }
 
 function renderAnnouncements() {
@@ -710,35 +788,60 @@ function showCurrentSemesterInfo() {
 }
 
 function init() {
-    loadSemesterConfig(function (err) {
-        if (err) {
-            console.error(err);
-            showError('外部数据加载失败', '请用本地HTTP服务器打开（不要直接 file://）。Android 4.4 也需要通过 HTTP 才更稳定。');
-            return;
-        }
-
-        initSemesterFilter();
-        loadAnnouncementCsv(function () { /* 不阻塞后续数据加载 */ });
-
-        var todayKey = getTodayKeyByRange() || 'current_semester';
-        var firstKey = null;
-        for (var k in semesterConfig) { if (hasOwn(semesterConfig, k)) { firstKey = k; break; } }
-        selectedSemesterKey = semesterConfig[todayKey] ? todayKey : (firstKey || 'all');
-        semesterFilter.value = selectedSemesterKey;
-
-        loadSemesterRecords(selectedSemesterKey, function (err2) {
-            if (err2) {
-                console.error(err2);
-                showError('外部数据加载失败', err2.message || String(err2));
+    // Android 4.4兼容处理：添加try-catch和详细错误信息
+    try {
+        loadSemesterConfig(function (err) {
+            if (err) {
+                console.error("学期配置加载失败:", err);
+                showError('外部数据加载失败', '请用本地HTTP服务器打开（不要直接 file://）。Android 4.4 也需要通过 HTTP 才更稳定。错误: ' + (err.message || String(err)));
                 return;
             }
 
-            applyFilters();
-            startAutoScroll();
-            updateCurrentTime();
-            setInterval(updateCurrentTime, 1000);
+            try {
+                initSemesterFilter();
+                loadAnnouncementCsv(function (err) {
+                    if (err) {
+                        console.warn("公告加载失败:", err);
+                    }
+                });
+
+                var todayKey = getTodayKeyByRange() || 'current_semester';
+                var firstKey = null;
+                for (var k in semesterConfig) { if (hasOwn(semesterConfig, k)) { firstKey = k; break; } }
+                selectedSemesterKey = semesterConfig[todayKey] ? todayKey : (firstKey || 'all');
+                
+                // Android 4.4兼容处理：检查DOM元素是否存在
+                if (semesterFilter) {
+                    semesterFilter.value = selectedSemesterKey;
+                }
+
+                loadSemesterRecords(selectedSemesterKey, function (err2) {
+                    if (err2) {
+                        console.error("学期记录加载失败:", err2);
+                        showError('外部数据加载失败', err2.message || String(err2));
+                        return;
+                    }
+
+                    try {
+                        applyFilters();
+                        startAutoScroll();
+                        updateCurrentTime();
+                        // Android 4.4兼容处理：使用setInterval替代setTimeout
+                        setInterval(updateCurrentTime, 1000);
+                    } catch (e) {
+                        console.error("应用过滤器或启动滚动失败:", e);
+                        showError('系统初始化失败', '应用过滤器或启动滚动时出错: ' + e.message);
+                    }
+                });
+            } catch (e) {
+                console.error("初始化过程中出错:", e);
+                showError('系统初始化失败', '初始化过程中出错: ' + e.message);
+            }
         });
-    });
+    } catch (e) {
+        console.error("初始化失败:", e);
+        showError('系统初始化失败', '系统初始化失败: ' + e.message);
+    }
 
     searchBtn.addEventListener('click', handleSearch);
     searchInput.addEventListener('keyup', function (event) {
@@ -778,8 +881,26 @@ function init() {
 }
 
 // 页面加载完成后初始化
+function safeInit() {
+    try {
+        init();
+    } catch (e) {
+        showError("系统初始化失败", "请尝试刷新页面或联系管理员。错误信息: " + e.message);
+    }
+}
+
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
+    // 简单兼容性处理
+    if (document.addEventListener) {
+        document.addEventListener('DOMContentLoaded', safeInit);
+    } else {
+        // 如果addEventListener不可用，使用传统方式
+        document.onreadystatechange = function() {
+            if (document.readyState === 'complete' || document.readyState === 'interactive') {
+                safeInit();
+            }
+        };
+    }
 } else {
-    init();
+    safeInit();
 }

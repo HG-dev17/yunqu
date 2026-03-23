@@ -49,13 +49,23 @@
   }
 
   function dispatchNativeChange(select) {
+    // Android 4.4兼容处理：使用更兼容的事件创建方式
     try {
-      select.dispatchEvent(new Event('change', { bubbles: true }));
-    } catch (e) {
-      // 兼容旧浏览器
-      var evt = document.createEvent('Event');
-      evt.initEvent('change', true, true);
-      select.dispatchEvent(evt);
+      // 首先尝试标准方式
+      var event = new Event('change', { bubbles: true });
+      select.dispatchEvent(event);
+    } catch (e1) {
+      try {
+        // 如果失败，尝试使用createEvent方式
+        var evt = document.createEvent('Event');
+        evt.initEvent('change', true, true);
+        select.dispatchEvent(evt);
+      } catch (e2) {
+        // 最后尝试最简单的方式
+        var evt = document.createEvent('HTMLEvents');
+        evt.initEvent('change', true, true);
+        select.dispatchEvent(evt);
+      }
     }
   }
 
@@ -217,7 +227,20 @@
   function watch(select) {
     if (!select || select.dataset && select.dataset.selectxWatch === '1') return;
     if (select.dataset && select.dataset.noSelectSearch === '1') return;
-    if (!('MutationObserver' in window)) return;
+    
+    // Android 4.4兼容处理：不使用MutationObserver
+    if (!('MutationObserver' in window)) {
+      // 定时检查选项变化
+      select.dataset.selectxWatch = '1';
+      var checkInterval = setInterval(function() {
+        if (!document.body.contains(select)) {
+          clearInterval(checkInterval);
+          return;
+        }
+        build(select);
+      }, 1000);
+      return;
+    }
 
     select.dataset.selectxWatch = '1';
     var obs = new MutationObserver(function () {
