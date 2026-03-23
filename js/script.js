@@ -376,7 +376,15 @@ function renderAnnouncements() {
     var filteredAnnouncements = [];
     for (var i = 0; i < allAnnouncements.length; i++) {
         var announcement = allAnnouncements[i];
-        if (selectedGrade === 'all' || announcement.grade === selectedGrade) {
+        // 兼容数字和字符串形式的年级值，如"2"和"初二"
+        if (selectedGrade === 'all' || 
+            announcement.grade === selectedGrade || 
+            (selectedGrade === '2' && announcement.grade === '初二') ||
+            (selectedGrade === '初二' && announcement.grade === '2') ||
+            (selectedGrade === '1' && announcement.grade === '初一') ||
+            (selectedGrade === '初一' && announcement.grade === '1') ||
+            (selectedGrade === '3' && announcement.grade === '初三') ||
+            (selectedGrade === '初三' && announcement.grade === '3')) {
             filteredAnnouncements.push(announcement);
         }
     }

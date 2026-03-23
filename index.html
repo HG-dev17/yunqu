@@ -111,6 +111,20 @@
             </div>
         </div>
         
+        <!-- 公告栏 -->
+        <div id="announcementBar" class="announcement-bar" style="display:none;">
+            <div class="announcement-title">
+                <i class="fas fa-bullhorn"></i> 公告
+                <select class="announcement-grade-filter" id="announcementGradeFilter">
+                    <option value="all">全部年级</option>
+                    <option value="1">初一</option>
+                    <option value="2">初二</option>
+                    <option value="3">初三</option>
+                </select>
+            </div>
+            <div id="announcementList" class="announcement-list"></div>
+        </div>
+
         <div class="scroll-status">
             <div class="status-dot" id="statusDot"></div>
             <span id="statusText">自动滚动中</span>
