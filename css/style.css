@@ -174,6 +174,66 @@ h1:after {
     line-height: 1.6;
 }
 
+.announcement-grade-filter {
+    padding: 5px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 5px;
+    font-size: 0.9rem;
+    outline: none;
+    background-color: rgba(255, 255, 255, 0.9);
+    margin-left: auto;
+    color: #2c3e50;
+}
+
+.announcement-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.announcement-item {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 12px 15px;
+    border-left: 4px solid #3498db;
+    transition: all 0.3s;
+}
+
+.announcement-item:hover {
+    background-color: #e9ecef;
+    transform: translateX(5px);
+}
+
+.announcement-item-content {
+    color: #34495e;
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+.announcement-item-grade {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background-color: #3498db;
+    color: white;
+    font-size: 0.8rem;
+    margin-bottom: 5px;
+}
+
+.announcement-item-time {
+    display: flex;
+    align-items: center;
+    color: #7f8c8d;
+    font-size: 0.85rem;
+    margin-top: 8px;
+    margin-bottom: 5px;
+}
+
+.announcement-item-time i {
+    margin-right: 5px;
+    color: #3498db;
+}
+
 .content-area {
     display: flex;
     flex-wrap: wrap;
@@ -206,11 +266,25 @@ h1:after {
     background: linear-gradient(to right, #e74c3c, #e67e22);
 }
 
+.announcement-header {
+    background: linear-gradient(to right, #3498db, #2980b9);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
 .column-content {
     padding: 20px;
     height: 500px;
     overflow: hidden;
     position: relative;
+}
+
+/* 公告列表容器特殊样式 */
+.column-content .announcement-list {
+    height: 100%;
+    overflow-y: auto;
+    padding-right: 5px;
 }
 
 .scroll-list {
@@ -523,5 +597,73 @@ footer {
     .date-range input[type="date"] {
         width: 100%;
         max-width: 220px;
+    }
+}
+/* 新增/修改的CSS规则，用于单栏布局 */
+.content-area-single {
+    display: block; /* 改为块级显示，占据整行 */
+    width: 100%;
+    margin-bottom: 40px;
+}
+
+.column-content-single {
+    padding: 20px;
+    height: 600px; /* 可以设置一个统一的高度，比原来两栏时更高一些 */
+    overflow: hidden;
+    position: relative;
+    background-color: white;
+    border-radius: 0 0 12px 12px; /* 与头部圆角匹配 */
+}
+
+.scroll-list-single {
+    position: relative;
+    /* 保持Android 4.4兼容性代码 */
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+}
+
+/* 修改卡片样式，以便在同一栏中区分奖惩 */
+.combined-card {
+    background-color: #f9f9f9;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s, box-shadow 0.3s;
+    border-left: 5px solid;
+}
+.combined-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+/* 表彰卡片 */
+.combined-card.praise {
+    border-left-color: #2ecc71;
+}
+/* 批评卡片 */
+.combined-card.criticism {
+    border-left-color: #e74c3c;
+}
+/* 单栏头部样式 */
+.column-header.combined-header {
+    background: linear-gradient(to right, #3498db, #9b59b6);
+    color: white;
+}
+
+/* 调整卡片内部元素的颜色，以便快速区分 */
+.card-header .student-name.praise-name {
+    color: #27ae60;
+}
+.card-header .student-name.criticism-name {
+    color: #c0392b;
+}
+
+/* 适配移动端 */
+@media (max-width: 768px) {
+    .content-area-single {
+        margin-bottom: 20px;
+    }
+    .column-content-single {
+        height: 500px; /* 在移动端可适当调整高度 */
     }
 }
