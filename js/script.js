@@ -191,41 +191,85 @@ function parseCSV(csvText) {
 }
 
 function fetchText(url, cb) {
-    try {
-        var xhr = new XMLHttpRequest();
-        var cacheBuster = '?t=' + new Date().getTime() + '&r=' + Math.random();
-        
-        // Android 4.4兼容处理：简化请求头设置
-        try {
-            xhr.open('GET', url + cacheBuster, true);
-            xhr.setRequestHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-            xhr.setRequestHeader('Pragma', 'no-cache');
-            xhr.setRequestHeader('Expires', '0');
-        } catch (e) {
-            // 如果设置请求头失败，尝试不设置请求头
-            xhr.open('GET', url + cacheBuster, true);
-        }
-        
-        xhr.onreadystatechange = function () {
-            if (xhr.readyState !== 4) return;
-            try {
-                if ((xhr.status >= 200 && xhr.status < 300) || xhr.status === 0) {
-                    cb(null, xhr.responseText);
-                } else {
-                    cb(new Error('HTTP ' + xhr.status + ' ' + (xhr.statusText || '')));
-                }
-            } catch (e) {
-                cb(new Error("处理响应时出错: " + e.message));
+    // Android 4.4.4 的 XHR 兼容性极差，需要进行特殊处理
+    var xhr = new XMLHttpRequest();
+    var cacheBuster = '?t=' + new Date().getTime();
+
+    // 关键修复点1: 移除随机数参数，某些旧浏览器版本处理不好
+    // 关键修复点2: 确保URL是绝对路径，并正确处理相对路径
+    var fullUrl = url;
+    if (!fullUrl.match(/^https?:\/\//)) {
+        // 如果是相对路径，则基于当前页面基础路径构造
+        var base = window.location.href;
+        base = base.substring(0, base.lastIndexOf('/') + 1);
+        fullUrl = base + fullUrl;
+    }
+    // 关键修复点3: 先尝试不加缓存破坏参数
+    var targetUrl = fullUrl;
+    
+    // 关键修复点4: 使用同步请求作为后备方案
+    var useAsync = true;
+    // 尝试探测是否为已知有问题的浏览器
+    var ua = navigator.userAgent || '';
+    if (ua.indexOf('Android 4.4.4') > -1 && ua.indexOf('Chrome') === -1) {
+        // 某些Android 4.4.4内置浏览器异步XHR有问题
+        useAsync = false;
+    }
+
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4) {
+            if ((xhr.status >= 200 && xhr.status < 300) || xhr.status === 0 || xhr.status === 304) {
+                cb(null, xhr.responseText);
+            } else {
+                // 第一次失败，尝试带缓存破坏参数的同步请求
+                console.warn('XHR async failed (' + xhr.status + '), trying sync fallback for:', url);
+                trySyncFallback(url, cb);
             }
-        };
-        
-        try {
-            xhr.send(null);
-        } catch (e) {
-            cb(new Error("发送请求失败: " + e.message));
         }
-    } catch (e) {
-        cb(new Error("创建请求时出错: " + e.message));
+    };
+
+    if (useAsync) {
+        try {
+            xhr.open('GET', targetUrl, true);
+            xhr.setRequestHeader('Cache-Control', 'no-cache');
+            xhr.setRequestHeader('Pragma', 'no-cache');
+            xhr.timeout = 15000; // 15秒超时
+            xhr.ontimeout = function() {
+                console.warn('XHR timeout, trying sync fallback for:', url);
+                trySyncFallback(url, cb);
+            };
+            xhr.send(null);
+        } catch (asyncErr) {
+            console.warn('Async XHR setup failed:', asyncErr.message, 'trying sync for:', url);
+            trySyncFallback(url, cb);
+        }
+    } else {
+        // 直接使用同步请求
+        trySyncFallback(url, cb);
+    }
+
+    // 同步请求后备函数
+    function trySyncFallback(urlToFetch, callback) {
+        var syncXhr = new XMLHttpRequest();
+        var syncUrl = urlToFetch + cacheBuster; // 同步请求时使用缓存破坏
+        var base = window.location.href;
+        base = base.substring(0, base.lastIndexOf('/') + 1);
+        if (!syncUrl.match(/^https?:\/\//)) {
+            syncUrl = base + syncUrl;
+        }
+        try {
+            syncXhr.open('GET', syncUrl, false); // false 表示同步
+            syncXhr.setRequestHeader('Cache-Control', 'no-cache');
+            syncXhr.setRequestHeader('Pragma', 'no-cache');
+            syncXhr.send(null);
+            if ((syncXhr.status >= 200 && syncXhr.status < 300) || syncXhr.status === 0) {
+                callback(null, syncXhr.responseText);
+            } else {
+                callback(new Error('同步请求失败 HTTP ' + syncXhr.status + ' for: ' + urlToFetch));
+            }
+        } catch (syncErr) {
+            callback(new Error('同步请求异常: ' + syncErr.message + ' for: ' + urlToFetch));
+        }
     }
 }
 
