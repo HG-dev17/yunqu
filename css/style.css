@@ -174,6 +174,51 @@ h1:after {
     line-height: 1.6;
 }
 
+.announcement-grade-filter {
+    padding: 5px 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 0.9rem;
+    outline: none;
+    background-color: white;
+    margin-left: auto;
+}
+
+.announcement-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.announcement-item {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 12px 15px;
+    border-left: 4px solid #3498db;
+    transition: all 0.3s;
+}
+
+.announcement-item:hover {
+    background-color: #e9ecef;
+    transform: translateX(5px);
+}
+
+.announcement-item-content {
+    color: #34495e;
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+.announcement-item-grade {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background-color: #3498db;
+    color: white;
+    font-size: 0.8rem;
+    margin-bottom: 5px;
+}
+
 .content-area {
     display: flex;
     flex-wrap: wrap;

@@ -32,6 +32,9 @@ var showCurrentSemesterBtn = document.getElementById('showCurrentSemesterBtn');
 var semesterInfoDisplay = document.getElementById('semesterInfoDisplay');
 var announcementBar = document.getElementById('announcementBar');
 var announcementText = document.getElementById('announcementText');
+var announcementList = document.getElementById('announcementList');
+var announcementGradeFilter = document.getElementById('announcementGradeFilter');
+var allAnnouncements = [];
 
 // 滚动相关变量
 var isScrolling = true;
@@ -301,7 +304,7 @@ function loadSemesterConfig(cb) {
 }
 
 function loadAnnouncementCsv(cb) {
-    if (!announcementBar || !announcementText) {
+    if (!announcementBar || !announcementList) {
         if (cb) cb();
         return;
     }
@@ -314,13 +317,54 @@ function loadAnnouncementCsv(cb) {
             return;
         }
 
-        var rows = parseCSV(csvText);
-        var row0 = (rows && rows.length > 0) ? rows[0] : {};
-        var text = row0.text || row0.announcement || row0.content || '';
-        text = (text == null) ? '' : String(text);
+        // 预处理CSV文本，将实际的换行符替换为临时标记
+        // 只处理引号内的换行符
+        var processedText = '';
+        var inQuotes = false;
+        for (var i = 0; i < csvText.length; i++) {
+            var c = csvText.charAt(i);
+            var next = csvText.charAt(i + 1);
 
-        announcementText.textContent = text.trim() ? text : '暂无公告';
-        announcementBar.style.display = 'block';
+            if (c === '"' && next === '"') {
+                processedText += '""';
+                i++;
+            } else if (c === '"') {
+                inQuotes = !inQuotes;
+                processedText += '"';
+            } else if (c === '' && inQuotes) {
+                // 引号内的换行符替换为临时标记
+                processedText += '\n';
+            } else {
+                processedText += c;
+            }
+        }
+
+        var rows = parseCSV(processedText);
+        allAnnouncements = [];
+
+        // 解析所有公告数据
+        for (var i = 0; i < rows.length; i++) {
+            var row = rows[i] || {};
+            var text = row.text || row.announcement || row.content || '';
+            var grade = row.grade || 'all';
+
+            if (text && text.trim()) {
+                allAnnouncements.push({
+                    text: text.trim(),
+                    grade: grade
+                });
+            }
+        }
+
+        // 渲染公告列表
+        renderAnnouncements();
+
+        // 显示公告栏
+        if (allAnnouncements.length > 0) {
+            announcementBar.style.display = 'block';
+        } else {
+            announcementBar.style.display = 'none';
+        }
 
         if (cb) cb(null);
     });
@@ -429,6 +473,69 @@ function init() {
     resetBtn.addEventListener('click', resetScroll);
     loadDataBtn.addEventListener('click', reloadData);
     showCurrentSemesterBtn.addEventListener('click', showCurrentSemesterInfo);
+
+    // 公告栏年级筛选事件
+    if (announcementGradeFilter) {
+        announcementGradeFilter.addEventListener('change', renderAnnouncements);
+    }
+}
+
+// 渲染公告列表
+function renderAnnouncements() {
+    if (!announcementList) return;
+
+    var selectedGrade = announcementGradeFilter ? announcementGradeFilter.value : 'all';
+
+    // 清空公告列表
+    announcementList.innerHTML = '';
+
+    // 筛选公告
+    var filteredAnnouncements = [];
+    for (var i = 0; i < allAnnouncements.length; i++) {
+        var announcement = allAnnouncements[i];
+        if (selectedGrade === 'all' || announcement.grade === selectedGrade) {
+            filteredAnnouncements.push(announcement);
+        }
+    }
+
+    // 如果没有公告
+    if (filteredAnnouncements.length === 0) {
+        announcementList.innerHTML = ''
+            + '<div class="no-data">'
+            + '  <i class="far fa-bell"></i>'
+            + '  <p>暂无公告</p>'
+            + '</div>';
+        return;
+    }
+
+    // 渲染公告
+    for (var j = 0; j < filteredAnnouncements.length; j++) {
+        var ann = filteredAnnouncements[j];
+        var item = document.createElement('div');
+        item.className = 'announcement-item';
+
+        var gradeLabel = '';
+        if (ann.grade && ann.grade !== 'all') {
+            var gradeMap = {
+                '1': '初一',
+                '2': '初二',
+                '3': '初三'
+            };
+            gradeLabel = '<span class="announcement-item-grade">' + (gradeMap[ann.grade] || ann.grade) + '</span>';
+        }
+
+        // 将\n替换为<br>标签以支持多行显示
+        var formattedText = escapeHtml(ann.text).replace(/\n/g, '<br>');
+        // 将文本中的\n替换为实际换行符，再转换为<br>标签
+        var textWithNewlines = ann.text.replace(/\\n/g, '');
+        var formattedText = escapeHtml(textWithNewlines).replace(/\n/g, '<br>');
+
+        item.innerHTML = ''
+            + gradeLabel
+            + '<div class="announcement-item-content">' + formattedText + '</div>';
+
+        announcementList.appendChild(item);
+    }
 }
 
 // 渲染列表
