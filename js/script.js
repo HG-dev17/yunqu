@@ -70,8 +70,22 @@ var allAnnouncements = [];
 // 滚动相关变量
 var isScrolling = true;
 var combinedScrollOffset = 0; // 单栏滚动偏移量
+var announcementScrollOffset = 0; // 公告栏滚动偏移量
 var scrollInterval = null;
 var scrollSpeed = 30;
+
+// 新增公告滚动状态变量
+var announcementScrollState = {
+  currentIndex: 0,
+  innerOffset: 0,
+  isLongAnnouncementScrolling: false,
+  isTransitioning: false,
+  pauseDuration: 1000, // 公告完全显示后立即切换，不等待
+  scrollStep: 1, // 每次滚动的像素数 - 与奖惩栏保持一致（每次减少1像素）
+  transitionSpeed: 800, // 公告间切换的过渡时间（毫秒）
+  longAnnouncementTimeout: 1500, // 长公告滚动完成的超时时间
+  isSingleAnnouncementLoop: false // 标记是否为单公告循环模式
+};
 
 function applyVerticalTransform(el, px) {
     if (!el) return;
@@ -411,7 +425,9 @@ function loadAnnouncementCsv(cb) {
                 allAnnouncements.push({
                     text: text.trim().replace(/\\n/g, '\n'),
                     grade: grade,
-                    time: row.time || ''
+                    time: row.time || '',
+                    image: row.image || '',
+                    video: row.video || ''
                 });
             }
         }
@@ -528,8 +544,45 @@ function renderAnnouncements() {
             gradeLabel = '<span class="announcement-item-grade">' + (gradeMap[ann.grade] || ann.grade) + '</span>';
         }
         var formattedText = escapeHtml(ann.text).replace(/\n/g, '<br>');
+
+        // 处理多个图片
+        var imageHtml = '';
+        if (ann.image && ann.image.trim()) {
+            var images = ann.image.split('|').filter(function(img) { return img && img.trim(); });
+            if (images.length > 0) {
+                imageHtml = '<div class="announcement-item-images">';
+                for (var i = 0; i < images.length; i++) {
+                    var imagePath = images[i].trim();
+                    if (!imagePath.match(/^https?:\/\//) && !imagePath.match(/^data\//)) {
+                        imagePath = 'data/img/' + imagePath;
+                    }
+                    imageHtml += '<div class="announcement-item-image"><img src="' + imagePath + '" alt="公告图片" onerror="this.src=\'\'; this.alt=\'图片加载失败\'"></div>';
+                }
+                imageHtml += '</div>';
+            }
+        }
+
+        // 处理多个视频
+        var videoHtml = '';
+        if (ann.video && ann.video.trim()) {
+            var videos = ann.video.split('|').filter(function(vid) { return vid && vid.trim(); });
+            if (videos.length > 0) {
+                videoHtml = '<div class="announcement-item-videos">';
+                for (var j = 0; j < videos.length; j++) {
+                    var videoPath = videos[j].trim();
+                    if (!videoPath.match(/^https?:\/\//) && !videoPath.match(/^data\//)) {
+                        videoPath = 'data/video/' + videoPath;
+                    }
+                    videoHtml += '<div class="announcement-item-video"><video controls src="' + videoPath + '" alt="公告视频"><p>您的浏览器不支持视频播放。</p></video></div>';
+                }
+                videoHtml += '</div>';
+            }
+        }
+
         item.innerHTML = ''
             + gradeLabel
+            + imageHtml
+            + videoHtml
             + '<div class="announcement-item-content">' + formattedText + '</div>'
             + (ann.time ? '<div class="announcement-item-time"><i class="far fa-clock"></i> ' + formatDate(ann.time) + '</div>' : '');
         announcementList.appendChild(item);
@@ -778,9 +831,10 @@ function toggleScroll() {
 }
 
 function resetScrollPosition() {
+    // 重置奖惩榜滚动位置
     combinedScrollOffset = 0;
     applyVerticalTransform(combinedList, combinedScrollOffset);
-    
+    // 奖惩榜的自动滚动功能
     if (!isScrolling) {
         isScrolling = true;
     }
@@ -899,7 +953,7 @@ function init() {
     semesterFilter.addEventListener('change', function () {
         var key = semesterFilter.value;
         if (key === 'all') {
-            alert('index页按单学期加载数据；如需查看全部学期，请点击“汇总所有学期”。');
+            alert('index页按单学期加载数据；如需查看全部学期，请点击"汇总所有学期"。');
             semesterFilter.value = selectedSemesterKey;
             return;
         }

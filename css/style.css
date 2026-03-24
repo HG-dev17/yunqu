@@ -210,6 +210,52 @@ h1:after {
     line-height: 1.6;
 }
 
+.announcement-item-images {
+    margin-bottom: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+}
+
+.announcement-item-image {
+    flex: 0 0 auto;
+    max-width: 100%;
+}
+
+.announcement-item-image img {
+    max-width: 100%;
+    height: auto;
+    max-height: 300px;
+    object-fit: contain;
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    display: block;
+}
+
+.announcement-item-videos {
+    margin-bottom: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+}
+
+.announcement-item-video {
+    flex: 0 0 auto;
+    max-width: 100%;
+}
+
+.announcement-item-video video {
+    max-width: 100%;
+    height: auto;
+    max-height: 400px;
+    object-fit: contain;
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    display: block;
+}
+
 .announcement-item-grade {
     display: inline-block;
     padding: 2px 8px;
@@ -285,11 +331,13 @@ h1:after {
     flex-direction: column;
 }
 
-/* 公告列表容器特殊样式 */
+/* 公告列表容器特殊样式 - 支持循环滚动和自适应高度 */
 .column-content .announcement-list {
     height: 100%;
     overflow-y: auto;
+    overflow-x: hidden;
     padding-right: 5px;
+    position: relative;
 }
 
 .scroll-list {
