@@ -63,13 +63,21 @@
             </div>
 
             <div class="panel-section">
-                <h3><i class="fas fa-bullhorn"></i> 公告栏编辑</h3>
-                <div class="form-group" style="margin-bottom: 15px;">
-                    <label for="announcementText">前台公告内容</label>
-                    <textarea id="announcementText" class="form-control" rows="4" placeholder="请输入要显示在前台的公告内容..."></textarea>
-                </div>
+                <h3><i class="fas fa-bullhorn"></i> 公告栏管理</h3>
 
                 <div class="button-group">
+                    <select class="filter-select" id="announcementGradeFilter">
+                        <option value="all">全部年级</option>
+                        <option value="初一">初一</option>
+                        <option value="初二">初二</option>
+                        <option value="初三">初三</option>
+                    </select>
+                </div>
+
+                <div class="button-group" style="margin-top: 10px;">
+                    <button id="addAnnouncementBtn" class="control-btn success" title="添加新公告">
+                        <i class="fas fa-plus-circle"></i> 新增公告
+                    </button>
                     <button id="loadAnnouncementBtn" class="control-btn" title="重新加载公告文件">
                         <i class="fas fa-sync-alt"></i> 重新加载公告
                     </button>
@@ -80,6 +88,14 @@
 
                 <div class="hint">
                     <i class="fas fa-info-circle"></i> 修改公告后请点击“<strong>导出公告修改</strong>”，再手动替换 <strong>data/announcement.csv</strong>。
+                </div>
+
+                <!-- 公告列表 -->
+                <div class="announcement-list-container" style="margin-top: 20px;">
+                    <h4>公告列表</h4>
+                    <div id="announcementListAdmin" class="announcement-list-admin">
+                        <!-- 公告列表将通过JS动态生成 -->
+                    </div>
                 </div>
             </div>
 
@@ -211,6 +227,52 @@
                 <div class="modal-footer">
                     <button type="button" class="control-btn" id="cancelAddBtn">取消</button>
                     <button type="submit" form="newRowForm" class="control-btn primary">确认添加</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 公告编辑表单 (模态框) -->
+        <div id="announcementModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-bullhorn"></i> <span id="announcementModalTitle">新增公告</span></h3>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="announcementForm">
+                        <input type="hidden" id="announcementId">
+                        <div class="form-group">
+                            <label for="announcementGrade">年级</label>
+                            <select id="announcementGrade" class="form-control">
+                                <option value="all">全部年级</option>
+                                <option value="初一">初一</option>
+                                <option value="初二">初二</option>
+                                <option value="初三">初三</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="announcementContent">公告内容</label>
+                            <textarea id="announcementContent" class="form-control" rows="4" placeholder="请输入公告内容..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="announcementImages">图片路径 (多个图片用|分隔)</label>
+                            <input type="text" id="announcementImages" class="form-control" placeholder="例如: img1.jpg|img2.jpg">
+                            <small style="color: #7f8c8d; display: block; margin-top: 5px;">提示：图片文件请放在 data/img/ 目录下</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="announcementVideos">视频路径 (多个视频用|分隔)</label>
+                            <input type="text" id="announcementVideos" class="form-control" placeholder="例如: video1.mp4|video2.mp4">
+                            <small style="color: #7f8c8d; display: block; margin-top: 5px;">提示：视频文件请放在 data/video/ 目录下</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="announcementTime">发布时间</label>
+                            <input type="date" id="announcementTime" class="form-control">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="control-btn" id="cancelAnnouncementBtn">取消</button>
+                    <button type="submit" form="announcementForm" class="control-btn primary">保存</button>
                 </div>
             </div>
         </div>

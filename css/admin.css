@@ -412,6 +412,122 @@ textarea.form-control {
     margin-right: 8px;
 }
 
+/* 公告管理样式 */
+.announcement-list-container {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    border: 1px solid #ecf0f1;
+}
+
+.announcement-list-container h4 {
+    color: #2c3e50;
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+}
+
+.announcement-list-admin {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.announcement-item-admin {
+    background: white;
+    border-radius: 8px;
+    padding: 15px;
+    border-left: 4px solid #3498db;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.announcement-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.announcement-item-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.announcement-item-actions .action-btn.edit {
+    background: #3498db;
+    color: white;
+    padding: 5px 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+}
+
+.announcement-item-actions .action-btn.edit:hover {
+    background: #2980b9;
+}
+
+.announcement-item-actions .action-btn.delete {
+    background: #e74c3c;
+    color: white;
+    padding: 5px 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+}
+
+.announcement-item-actions .action-btn.delete:hover {
+    background: #c0392b;
+}
+
+.announcement-item-body {
+    margin-top: 10px;
+}
+
+.announcement-item-images {
+    margin-bottom: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.announcement-item-image {
+    flex: 0 0 auto;
+}
+
+.announcement-item-videos {
+    margin-bottom: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.announcement-item-video {
+    flex: 0 0 auto;
+}
+
+.announcement-item-content {
+    color: #34495e;
+    font-size: 1rem;
+    line-height: 1.6;
+    margin-bottom: 10px;
+}
+
+.announcement-item-time {
+    display: flex;
+    align-items: center;
+    color: #7f8c8d;
+    font-size: 0.85rem;
+    margin-top: 8px;
+}
+
+.announcement-item-time i {
+    margin-right: 5px;
+    color: #3498db;
+}
+
 /* 响应式调整 */
 @media (max-width: 768px) {
     .control-group, .button-group, .form-row {

@@ -12,7 +12,7 @@
     var displayedRecords = [];     // 筛选后显示的数据
     var isDataModified = false;
     var selectedRowIds = new Set(); // 存储选中行的ID
-    var currentAnnouncementText = '';
+    var allAnnouncements = []; // 存储所有公告数据
 
     // DOM 元素
     var semesterSelect = document.getElementById('semesterSelect');
@@ -39,9 +39,21 @@
     var cancelAddBtn = document.getElementById('cancelAddBtn');
     var newDatetimeInput = document.getElementById('newDatetime');
     var currentTimeSpan = document.getElementById('currentTime');
-    var announcementText = document.getElementById('announcementText');
     var loadAnnouncementBtn = document.getElementById('loadAnnouncementBtn');
     var exportAnnouncementBtn = document.getElementById('exportAnnouncementBtn');
+    var addAnnouncementBtn = document.getElementById('addAnnouncementBtn');
+    var announcementListAdmin = document.getElementById('announcementListAdmin');
+    var announcementModal = document.getElementById('announcementModal');
+    var announcementForm = document.getElementById('announcementForm');
+    var cancelAnnouncementBtn = document.getElementById('cancelAnnouncementBtn');
+    var announcementModalTitle = document.getElementById('announcementModalTitle');
+    var announcementId = document.getElementById('announcementId');
+    var announcementGrade = document.getElementById('announcementGrade');
+    var announcementContent = document.getElementById('announcementContent');
+    var announcementImages = document.getElementById('announcementImages');
+    var announcementVideos = document.getElementById('announcementVideos');
+    var announcementTime = document.getElementById('announcementTime');
+    var announcementGradeFilter = document.getElementById('announcementGradeFilter');
 
     // 工具函数
     function escapeHtml(str) {
@@ -144,8 +156,6 @@
 
     // 公告栏：从 data/announcement.csv 读取，并可导出覆盖修改后的文件
     function loadAnnouncementCsv() {
-        if (!announcementText) return;
-
         if (loadAnnouncementBtn) {
             loadAnnouncementBtn.disabled = true;
             loadAnnouncementBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 加载中...';
@@ -159,28 +169,60 @@
 
             if (err) {
                 console.error('公告栏加载失败:', err);
-                announcementText.value = '';
-                currentAnnouncementText = '';
+                allAnnouncements = [];
+                renderAnnouncementList();
                 return;
             }
 
             var rows = parseCSV(csvText);
-            var row0 = (rows && rows.length > 0) ? rows[0] : {};
-            var text = row0.text || row0.announcement || row0.content || '';
-            text = (text == null) ? '' : String(text);
+            allAnnouncements = [];
 
-            announcementText.value = text;
-            currentAnnouncementText = text;
+            for (var i = 0; i < rows.length; i++) {
+                var r = rows[i] || {};
+                var text = r.text || r.announcement || r.content || '';
+                var image = r.image || '';
+                var video = r.video || '';
+                var grade = r.grade || 'all';
+
+                // 年级字段兼容数字和中文格式
+                var gradeMap = { '1': '初一', '2': '初二', '3': '初三' };
+                if (gradeMap[grade]) {
+                    grade = gradeMap[grade];
+                }
+
+                // 允许公告只有图片或视频，没有文本
+                if (text && text.trim() || image || video) {
+                    allAnnouncements.push({
+                        _id: r.id || generateId(),
+                        text: text ? text.trim() : '',
+                        grade: grade,
+                        image: image,
+                        video: video,
+                        time: r.time || ''
+                    });
+                }
+            }
+
+            // 渲染公告列表
+            renderAnnouncementList();
         });
     }
 
     function exportAnnouncementToCsv() {
-        if (!announcementText) return;
+        // 构建CSV内容
+        var csvContent = 'text,grade,image,video,time\r\n';
 
-        var txt = String(announcementText.value || '');
-
-        var csvContent = 'text\r\n';
-        csvContent += escapeCsvCell(txt) + '\r\n';
+        for (var i = 0; i < allAnnouncements.length; i++) {
+            var ann = allAnnouncements[i];
+            var row = [
+                escapeCsvCell(ann.text || ''),
+                escapeCsvCell(ann.grade || 'all'),
+                escapeCsvCell(ann.image || ''),
+                escapeCsvCell(ann.video || ''),
+                escapeCsvCell(ann.time || '')
+            ];
+            csvContent += row.join(',') + '\r\n';
+        }
 
         var BOM = '\uFEFF';
         var blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -197,8 +239,218 @@
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
 
-        currentAnnouncementText = txt;
         alert('公告已导出: ' + filename + '\n请用此文件手动替换 data/announcement.csv');
+    }
+
+    // 渲染公告列表
+    function renderAnnouncementList() {
+        if (!announcementListAdmin) return;
+
+        // 获取当前选择的年级
+        var selectedGrade = announcementGradeFilter ? announcementGradeFilter.value : 'all';
+
+        // 筛选公告
+        var filteredAnnouncements = [];
+        for (var i = 0; i < allAnnouncements.length; i++) {
+            var ann = allAnnouncements[i];
+            if (selectedGrade === 'all' || ann.grade === selectedGrade) {
+                filteredAnnouncements.push(ann);
+            }
+        }
+
+        if (filteredAnnouncements.length === 0) {
+            announcementListAdmin.innerHTML = '<div class="no-data"><i class="far fa-bell"></i><p>暂无公告</p></div>';
+            return;
+        }
+
+        var html = '';
+        for (var i = 0; i < filteredAnnouncements.length; i++) {
+            var ann = filteredAnnouncements[i];
+            var gradeLabel = '';
+            if (ann.grade && ann.grade !== 'all') {
+                var gradeMap = { '1': '初一', '2': '初二', '3': '初三' };
+                gradeLabel = '<span class="announcement-item-grade">' + (gradeMap[ann.grade] || ann.grade) + '</span>';
+            }
+
+            var imagePreview = '';
+            if (ann.image && ann.image.trim()) {
+                var images = ann.image.split('|').filter(function(img) { return img && img.trim(); });
+                if (images.length > 0) {
+                    imagePreview = '<div class="announcement-item-images">';
+                    for (var j = 0; j < images.length; j++) {
+                        var imagePath = images[j].trim();
+                        if (!imagePath.match(/^https?:\/\//) && !imagePath.match(/^data\//)) {
+                            imagePath = 'data/img/' + imagePath;
+                        }
+                        imagePreview += '<div class="announcement-item-image"><img src="' + imagePath + '" alt="公告图片" style="max-width: 100px; max-height: 100px; object-fit: contain;"></div>';
+                    }
+                    imagePreview += '</div>';
+                }
+            }
+
+            var videoPreview = '';
+            if (ann.video && ann.video.trim()) {
+                var videos = ann.video.split('|').filter(function(vid) { return vid && vid.trim(); });
+                if (videos.length > 0) {
+                    videoPreview = '<div class="announcement-item-videos">';
+                    for (var k = 0; k < videos.length; k++) {
+                        var videoPath = videos[k].trim();
+                        if (!videoPath.match(/^https?:\/\//) && !videoPath.match(/^data\//)) {
+                            videoPath = 'data/video/' + videoPath;
+                        }
+                        videoPreview += '<div class="announcement-item-video"><video controls src="' + videoPath + '" style="max-width: 200px; max-height: 150px; object-fit: contain;"></video></div>';
+                    }
+                    videoPreview += '</div>';
+                }
+            }
+
+            html += '<div class="announcement-item-admin" data-id="' + escapeHtml(ann._id) + '">';
+            html += '  <div class="announcement-item-header">';
+            html += '    ' + gradeLabel;
+            html += '    <div class="announcement-item-actions">';
+            html += '      <button class="action-btn edit" data-id="' + escapeHtml(ann._id) + '"><i class="fas fa-edit"></i> 编辑</button>';
+            html += '      <button class="action-btn delete" data-id="' + escapeHtml(ann._id) + '"><i class="fas fa-trash-alt"></i> 删除</button>';
+            html += '    </div>';
+            html += '  </div>';
+            html += '  <div class="announcement-item-body">';
+            html += '    ' + imagePreview;
+            html += '    ' + videoPreview;
+            html += '    <div class="announcement-item-content">' + escapeHtml(ann.text).replace(/\n/g, '<br>') + '</div>';
+            html += '    ' + (ann.time ? '<div class="announcement-item-time"><i class="far fa-clock"></i> ' + escapeHtml(ann.time) + '</div>' : '');
+            html += '  </div>';
+            html += '</div>';
+        }
+
+        announcementListAdmin.innerHTML = html;
+
+        // 绑定编辑和删除按钮事件
+        var editButtons = announcementListAdmin.querySelectorAll('.action-btn.edit');
+        for (var m = 0; m < editButtons.length; m++) {
+            editButtons[m].addEventListener('click', function(e) {
+                var id = e.currentTarget.getAttribute('data-id');
+                openAnnouncementModal(id);
+            });
+        }
+
+        var deleteButtons = announcementListAdmin.querySelectorAll('.action-btn.delete');
+        for (var n = 0; n < deleteButtons.length; n++) {
+            deleteButtons[n].addEventListener('click', function(e) {
+                var id = e.currentTarget.getAttribute('data-id');
+                if (confirm('确定要删除这条公告吗？')) {
+                    deleteAnnouncement(id);
+                }
+            });
+        }
+    }
+
+    // 打开公告编辑模态框
+    function openAnnouncementModal(id) {
+        var announcement = null;
+        for (var i = 0; i < allAnnouncements.length; i++) {
+            if (allAnnouncements[i]._id === id) {
+                announcement = allAnnouncements[i];
+                break;
+            }
+        }
+
+        if (id && announcement) {
+            // 编辑模式
+            announcementModalTitle.textContent = '编辑公告';
+            announcementId.value = id;
+
+            // 年级字段兼容数字和中文格式
+            var grade = announcement.grade || 'all';
+            var gradeMap = { '1': '初一', '2': '初二', '3': '初三' };
+            if (gradeMap[grade]) {
+                grade = gradeMap[grade];
+            }
+            announcementGrade.value = grade;
+
+            announcementContent.value = announcement.text || '';
+            announcementImages.value = announcement.image || '';
+            announcementVideos.value = announcement.video || '';
+            announcementTime.value = announcement.time || '';
+
+            // 同步更新年级筛选下拉框
+            if (announcementGradeFilter) {
+                announcementGradeFilter.value = grade;
+                // 手动触发change事件，以刷新公告列表
+                var event = new Event('change', { bubbles: true });
+                announcementGradeFilter.dispatchEvent(event);
+            }
+        } else {
+            // 新增模式
+            announcementModalTitle.textContent = '新增公告';
+            announcementId.value = '';
+            announcementGrade.value = 'all';
+            announcementContent.value = '';
+            announcementImages.value = '';
+            announcementVideos.value = '';
+            var now = new Date();
+            var month = (now.getMonth() + 1).toString();
+            var day = now.getDate().toString();
+            announcementTime.value = now.getFullYear() + '-' + 
+                (month.length < 2 ? '0' + month : month) + '-' + 
+                (day.length < 2 ? '0' + day : day);
+        }
+
+        announcementModal.style.display = 'flex';
+    }
+
+    // 关闭公告编辑模态框
+    function closeAnnouncementModal() {
+        announcementModal.style.display = 'none';
+        announcementForm.reset();
+        announcementId.value = '';
+    }
+
+    // 保存公告
+    function saveAnnouncement(formData) {
+        var id = formData.id;
+
+        if (id) {
+            // 编辑模式
+            for (var i = 0; i < allAnnouncements.length; i++) {
+                if (allAnnouncements[i]._id === id) {
+                    allAnnouncements[i].text = formData.text;
+                    allAnnouncements[i].grade = formData.grade;
+                    allAnnouncements[i].image = formData.image;
+                    allAnnouncements[i].video = formData.video;
+                    allAnnouncements[i].time = formData.time;
+                    break;
+                }
+            }
+        } else {
+            // 新增模式
+            var newAnnouncement = {
+                _id: generateId(),
+                text: formData.text,
+                grade: formData.grade,
+                image: formData.image,
+                video: formData.video,
+                time: formData.time
+            };
+            allAnnouncements.unshift(newAnnouncement);
+        }
+
+        renderAnnouncementList();
+        closeAnnouncementModal();
+    }
+
+    // 删除公告
+    function deleteAnnouncement(id) {
+        var index = -1;
+        for (var i = 0; i < allAnnouncements.length; i++) {
+            if (allAnnouncements[i]._id === id) {
+                index = i;
+                break;
+            }
+        }
+
+        if (index > -1) {
+            allAnnouncements.splice(index, 1);
+            renderAnnouncementList();
+        }
     }
 
     // 加载CSV数据
@@ -695,6 +947,34 @@
         // 公告栏
         if (loadAnnouncementBtn) loadAnnouncementBtn.addEventListener('click', loadAnnouncementCsv);
         if (exportAnnouncementBtn) exportAnnouncementBtn.addEventListener('click', exportAnnouncementToCsv);
+        if (addAnnouncementBtn) addAnnouncementBtn.addEventListener('click', function() {
+            openAnnouncementModal(null);
+        });
+        if (cancelAnnouncementBtn) cancelAnnouncementBtn.addEventListener('click', closeAnnouncementModal);
+        if (announcementForm) {
+            announcementForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                var formData = {
+                    id: announcementId.value,
+                    text: announcementContent.value,
+                    grade: announcementGrade.value,
+                    image: announcementImages.value,
+                    video: announcementVideos.value,
+                    time: announcementTime.value
+                };
+
+                // 允许公告内容完全留空
+                saveAnnouncement(formData);
+            });
+        }
+        if (announcementModal) {
+            announcementModal.querySelector('.modal-close').addEventListener('click', closeAnnouncementModal);
+        }
+        if (announcementGradeFilter) {
+            announcementGradeFilter.addEventListener('change', function() {
+                renderAnnouncementList();
+            });
+        }
 
         // 行内保存/取消/删除（事件委托：只绑定一次，避免重复弹窗确认）
         tableBody.addEventListener('click', function(e) {

@@ -94,7 +94,7 @@ h1:after {
     background-color: #3498db;
     color: white;
     border: none;
-    padding: 8px 18px;
+    padding: 5px 18px;
     border-radius: 0 8px 8px 0;
     cursor: pointer;
     transition: background-color 0.3s;

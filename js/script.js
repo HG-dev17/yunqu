@@ -421,15 +421,14 @@ function loadAnnouncementCsv(cb) {
             var row = rows[i] || {};
             var text = row.text || row.announcement || row.content || '';
             var grade = row.grade || 'all';
-            if (text && text.trim()) {
-                allAnnouncements.push({
-                    text: text.trim().replace(/\\n/g, '\n'),
-                    grade: grade,
-                    time: row.time || '',
-                    image: row.image || '',
-                    video: row.video || ''
-                });
-            }
+            // 即使内容为空的公告也要展示
+            allAnnouncements.push({
+                text: text.trim().replace(/\\n/g, '\n'),
+                grade: grade,
+                time: row.time || '',
+                image: row.image || '',
+                video: row.video || ''
+            });
         }
         renderAnnouncements();
         if (allAnnouncements.length > 0) {
@@ -556,7 +555,7 @@ function renderAnnouncements() {
                     if (!imagePath.match(/^https?:\/\//) && !imagePath.match(/^data\//)) {
                         imagePath = 'data/img/' + imagePath;
                     }
-                    imageHtml += '<div class="announcement-item-image"><img src="' + imagePath + '" alt="公告图片" onerror="this.src=\'\'; this.alt=\'图片加载失败\'"></div>';
+                    imageHtml += '<div class="announcement-item-image"><img src="' + imagePath + '" alt="公告图片" onclick="showImageModal(\'' + imagePath + '\')" onerror="this.src=\'\'; this.alt=\'图片加载失败\'"></div>';
                 }
                 imageHtml += '</div>';
             }
@@ -985,6 +984,41 @@ function safeInit() {
     } catch (e) {
         showError("系统初始化失败", "请尝试刷新页面或联系管理员。错误信息: " + e.message);
     }
+}
+
+// 图片放大查看功能
+function showImageModal(imageSrc) {
+    // 创建模态框元素
+    var modal = document.createElement('div');
+    modal.className = 'image-modal';
+    modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background-color:rgba(0,0,0,0.9);display:flex;justify-content:center;align-items:center;z-index:9999;cursor:pointer;';
+    
+    // 创建图片元素
+    var img = document.createElement('img');
+    img.src = imageSrc;
+    img.style.cssText = 'max-width:90%;max-height:90%;object-fit:contain;';
+    
+    // 创建关闭按钮
+    var closeBtn = document.createElement('span');
+    closeBtn.innerHTML = '&times;';
+    closeBtn.style.cssText = 'position:absolute;top:20px;right:30px;color:#f1f1f1;font-size:40px;font-weight:bold;cursor:pointer;z-index:10000;';
+    
+    // 添加点击事件关闭模态框
+    modal.onclick = function() {
+        document.body.removeChild(modal);
+    };
+    
+    closeBtn.onclick = function(e) {
+        e.stopPropagation(); // 阻止事件冒泡
+        document.body.removeChild(modal);
+    };
+    
+    // 将元素添加到模态框
+    modal.appendChild(img);
+    modal.appendChild(closeBtn);
+    
+    // 将模态框添加到页面
+    document.body.appendChild(modal);
 }
 
 if (document.readyState === 'loading') {
