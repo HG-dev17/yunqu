@@ -78,8 +78,9 @@
         </div>
 
         
+        <!-- 奖惩榜和公告栏左右布局 -->
+        <div class="content-area">
         <!-- 奖惩栏 -->
-        <div class="content-area-single">
             <div class="column">
                 <div class="column-header combined-header">
                     <i class="fas fa-balance-scale"></i> 学生奖惩公示栏
@@ -91,10 +92,8 @@
                     </div>
                 </div>
             </div>
-        </div>
             
-        <!-- 公告栏 -->
-        <div class="content-area">
+            <!-- 公告栏 -->
             <div class="column">
                 <div class="column-header announcement-header">
                     <i class="fas fa-bullhorn"></i>&ensp;公告栏
@@ -109,20 +108,6 @@
                     <div id="announcementList" class="announcement-list"></div>
                 </div>
             </div>
-        </div>
-        
-        <!-- 公告栏 -->
-        <div id="announcementBar" class="announcement-bar" style="display:none;">
-            <div class="announcement-title">
-                <i class="fas fa-bullhorn"></i> 公告
-                <select class="announcement-grade-filter" id="announcementGradeFilter">
-                    <option value="all">全部年级</option>
-                    <option value="1">初一</option>
-                    <option value="2">初二</option>
-                    <option value="3">初三</option>
-                </select>
-            </div>
-            <div id="announcementList" class="announcement-list"></div>
         </div>
 
         <div class="scroll-status">

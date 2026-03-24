@@ -239,15 +239,18 @@ h1:after {
     flex-wrap: wrap;
     gap: 30px;
     margin-bottom: 40px;
+    justify-content: space-between;
 }
 
 .column {
     flex: 1;
     min-width: 300px;
+    max-width: calc(50% - 15px);
     background-color: white;
     border-radius: 12px;
     overflow: hidden;
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+    margin-bottom: 0;
 }
 
 .column-header {
@@ -278,6 +281,8 @@ h1:after {
     height: 500px;
     overflow: hidden;
     position: relative;
+    display: flex;
+    flex-direction: column;
 }
 
 /* 公告列表容器特殊样式 */
@@ -608,7 +613,7 @@ footer {
 
 .column-content-single {
     padding: 20px;
-    height: 600px; /* 可以设置一个统一的高度，比原来两栏时更高一些 */
+    height: 500px; /* 与column-content保持一致的高度 */
     overflow: hidden;
     position: relative;
     background-color: white;
