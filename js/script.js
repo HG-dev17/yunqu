@@ -218,8 +218,8 @@ function fetchText(url, cb) {
         base = base.substring(0, base.lastIndexOf('/') + 1);
         fullUrl = base + fullUrl;
     }
-    // 关键修复点3: 先尝试不加缓存破坏参数
-    var targetUrl = fullUrl;
+    // 关键修复点3: 所有请求都添加缓存破坏参数，避免Android 4.4.4缓存问题
+    var targetUrl = fullUrl + cacheBuster;
     
     // 关键修复点4: 使用同步请求作为后备方案
     var useAsync = true;
@@ -245,8 +245,9 @@ function fetchText(url, cb) {
     if (useAsync) {
         try {
             xhr.open('GET', targetUrl, true);
-            xhr.setRequestHeader('Cache-Control', 'no-cache');
+            xhr.setRequestHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
             xhr.setRequestHeader('Pragma', 'no-cache');
+            xhr.setRequestHeader('Expires', '0');
             xhr.timeout = 15000; // 15秒超时
             xhr.ontimeout = function() {
                 console.warn('XHR timeout, trying sync fallback for:', url);
@@ -265,7 +266,9 @@ function fetchText(url, cb) {
     // 同步请求后备函数
     function trySyncFallback(urlToFetch, callback) {
         var syncXhr = new XMLHttpRequest();
-        var syncUrl = urlToFetch + cacheBuster; // 同步请求时使用缓存破坏
+        // 使用不同的缓存破坏参数，确保每次请求都不同
+        var syncCacheBuster = '?t=' + new Date().getTime() + '&r=' + Math.random();
+        var syncUrl = urlToFetch + syncCacheBuster;
         var base = window.location.href;
         base = base.substring(0, base.lastIndexOf('/') + 1);
         if (!syncUrl.match(/^https?:\/\//)) {
@@ -273,8 +276,9 @@ function fetchText(url, cb) {
         }
         try {
             syncXhr.open('GET', syncUrl, false); // false 表示同步
-            syncXhr.setRequestHeader('Cache-Control', 'no-cache');
+            syncXhr.setRequestHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
             syncXhr.setRequestHeader('Pragma', 'no-cache');
+            syncXhr.setRequestHeader('Expires', '0');
             syncXhr.send(null);
             if ((syncXhr.status >= 200 && syncXhr.status < 300) || syncXhr.status === 0) {
                 callback(null, syncXhr.responseText);
