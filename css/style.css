@@ -662,10 +662,33 @@ footer {
 .column-content-single {
     padding: 20px;
     height: 500px; /* 与column-content保持一致的高度 */
-    overflow: hidden;
+    overflow-y: auto; /* 允许垂直滚动 */
+    overflow-x: hidden; /* 隐藏水平滚动条 */
     position: relative;
     background-color: white;
     border-radius: 0 0 12px 12px; /* 与头部圆角匹配 */
+    /* 自定义滚动条样式 */
+    scrollbar-width: thin; /* Firefox */
+    scrollbar-color: rgba(52, 152, 219, 0.5) rgba(0, 0, 0, 0.05);
+}
+
+/* Webkit浏览器（Chrome, Safari等）滚动条样式 */
+.column-content-single::-webkit-scrollbar {
+    width: 8px;
+}
+
+.column-content-single::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+}
+
+.column-content-single::-webkit-scrollbar-thumb {
+    background: rgba(52, 152, 219, 0.5);
+    border-radius: 4px;
+}
+
+.column-content-single::-webkit-scrollbar-thumb:hover {
+    background: rgba(52, 152, 219, 0.8);
 }
 
 .scroll-list-single {
@@ -673,6 +696,8 @@ footer {
     /* 保持Android 4.4兼容性代码 */
     -webkit-transform: translateZ(0);
     transform: translateZ(0);
+    /* 确保内容不会被transform移出可视范围 */
+    will-change: transform;
 }
 
 /* 修改卡片样式，以便在同一栏中区分奖惩 */

@@ -638,7 +638,14 @@ function renderCombinedList() {
         combinedList.appendChild(card);
     }
     combinedScrollOffset = 0;
-    applyVerticalTransform(combinedList, combinedScrollOffset);
+    
+    // 同步滚动条位置
+    var container = document.querySelector('.column-content-single');
+    if (container) {
+        container.scrollTop = 0;
+    }
+    
+    // 不再需要transform，只使用CSS的原生滚动
 }
 
 function updateCurrentTime() {
@@ -802,13 +809,21 @@ function startAutoScroll() {
         var containerHeight = container.offsetHeight;
         var listHeight = combinedList.scrollHeight;
         
+        // 检查用户是否正在手动滚动
+        if (container.scrollTop !== Math.abs(combinedScrollOffset)) {
+            // 用户正在手动滚动，更新偏移量以匹配当前位置
+            combinedScrollOffset = -container.scrollTop;
+            return; // 跳过本次自动滚动，不打断用户操作
+        }
+
         combinedScrollOffset -= 1;
         
         if (listHeight > 0 && Math.abs(combinedScrollOffset) >= listHeight - containerHeight) {
             combinedScrollOffset = 0;
         }
         
-        applyVerticalTransform(combinedList, combinedScrollOffset);
+        // 同步滚动条位置
+        container.scrollTop = Math.abs(combinedScrollOffset);
     }, scrollSpeed);
     
     statusDot.classList.remove('paused');
@@ -832,7 +847,14 @@ function toggleScroll() {
 function resetScrollPosition() {
     // 重置奖惩榜滚动位置
     combinedScrollOffset = 0;
-    applyVerticalTransform(combinedList, combinedScrollOffset);
+    
+    // 同步滚动条位置
+    var container = document.querySelector('.column-content-single');
+    if (container) {
+        container.scrollTop = 0;
+    }
+    
+    // 不再需要transform，只使用CSS的原生滚动
     // 奖惩榜的自动滚动功能
     if (!isScrolling) {
         isScrolling = true;
