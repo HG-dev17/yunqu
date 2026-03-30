@@ -66,6 +66,9 @@ var announcementList = document.getElementById('announcementList');
 var announcementColumn = document.querySelector('.content-area .column');
 var announcementGradeFilter = document.getElementById('announcementGradeFilter');
 var allAnnouncements = [];
+var countdownDisplay = document.getElementById('countdownDisplay');
+var countdownConfig = {}; // 倒计时配置
+var countdownInterval = null; // 倒计时定时器
 
 // 滚动相关变量
 var isScrolling = true;
@@ -73,19 +76,8 @@ var combinedScrollOffset = 0; // 单栏滚动偏移量
 var announcementScrollOffset = 0; // 公告栏滚动偏移量
 var scrollInterval = null;
 var scrollSpeed = 30;
-
-// 新增公告滚动状态变量
-var announcementScrollState = {
-  currentIndex: 0,
-  innerOffset: 0,
-  isLongAnnouncementScrolling: false,
-  isTransitioning: false,
-  pauseDuration: 1000, // 公告完全显示后立即切换，不等待
-  scrollStep: 1, // 每次滚动的像素数 - 与奖惩栏保持一致（每次减少1像素）
-  transitionSpeed: 800, // 公告间切换的过渡时间（毫秒）
-  longAnnouncementTimeout: 1500, // 长公告滚动完成的超时时间
-  isSingleAnnouncementLoop: false // 标记是否为单公告循环模式
-};
+var announcementScrollInterval = null; // 公告栏滚动定时器
+var isAnnouncementScrolling = true; // 公告栏滚动状态
 
 function applyVerticalTransform(el, px) {
     if (!el) return;
@@ -207,48 +199,47 @@ function parseCSV(csvText) {
 function fetchText(url, cb) {
     // Android 4.4.4 的 XHR 兼容性极差，需要进行特殊处理
     var xhr = new XMLHttpRequest();
-    var cacheBuster = '?t=' + new Date().getTime();
+    
+    // 增强的缓存破坏机制：使用时间戳+随机数+页面刷新计数
+    var cacheBuster = '?nocache=' + new Date().getTime() + '&rand=' + Math.random().toString(36).substring(7);
+    
+    // 尝试探测是否为已知有问题的浏览器
+    var ua = navigator.userAgent || '';
+    var isAndroid44 = (ua.indexOf('Android 4.4') > -1 || ua.indexOf('Android 5.') > -1) && ua.indexOf('Chrome') === -1;
+    
+    // Android 4.4.4 强制使用同步请求
+    var useAsync = !isAndroid44;
 
-    // 关键修复点1: 移除随机数参数，某些旧浏览器版本处理不好
-    // 关键修复点2: 确保URL是绝对路径，并正确处理相对路径
+    // 构造完整URL
     var fullUrl = url;
     if (!fullUrl.match(/^https?:\/\//)) {
-        // 如果是相对路径，则基于当前页面基础路径构造
         var base = window.location.href;
         base = base.substring(0, base.lastIndexOf('/') + 1);
         fullUrl = base + fullUrl;
     }
-    // 关键修复点3: 所有请求都添加缓存破坏参数，避免Android 4.4.4缓存问题
-    var targetUrl = fullUrl + cacheBuster;
     
-    // 关键修复点4: 使用同步请求作为后备方案
-    var useAsync = true;
-    // 尝试探测是否为已知有问题的浏览器
-    var ua = navigator.userAgent || '';
-    if (ua.indexOf('Android 4.4.4') > -1 && ua.indexOf('Chrome') === -1) {
-        // 某些Android 4.4.4内置浏览器异步XHR有问题
-        useAsync = false;
-    }
-
-    xhr.onreadystatechange = function () {
-        if (xhr.readyState === 4) {
-            if ((xhr.status >= 200 && xhr.status < 300) || xhr.status === 0 || xhr.status === 304) {
-                cb(null, xhr.responseText);
-            } else {
-                // 第一次失败，尝试带缓存破坏参数的同步请求
-                console.warn('XHR async failed (' + xhr.status + '), trying sync fallback for:', url);
-                trySyncFallback(url, cb);
-            }
-        }
-    };
+    // 添加缓存破坏参数
+    var targetUrl = fullUrl + cacheBuster;
 
     if (useAsync) {
+        // 异步请求
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === 4) {
+                if ((xhr.status >= 200 && xhr.status < 300) || xhr.status === 0 || xhr.status === 304) {
+                    cb(null, xhr.responseText);
+                } else {
+                    console.warn('XHR async failed (' + xhr.status + '), trying sync fallback for:', url);
+                    trySyncFallback(url, cb);
+                }
+            }
+        };
+        
         try {
             xhr.open('GET', targetUrl, true);
             xhr.setRequestHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
             xhr.setRequestHeader('Pragma', 'no-cache');
             xhr.setRequestHeader('Expires', '0');
-            xhr.timeout = 15000; // 15秒超时
+            xhr.timeout = 15000;
             xhr.ontimeout = function() {
                 console.warn('XHR timeout, trying sync fallback for:', url);
                 trySyncFallback(url, cb);
@@ -259,27 +250,31 @@ function fetchText(url, cb) {
             trySyncFallback(url, cb);
         }
     } else {
-        // 直接使用同步请求
+        // Android 4.4.4 直接使用同步请求
         trySyncFallback(url, cb);
     }
 
-    // 同步请求后备函数
+    // 同步请求函数（用于 Android 4.4.4）
     function trySyncFallback(urlToFetch, callback) {
         var syncXhr = new XMLHttpRequest();
-        // 使用不同的缓存破坏参数，确保每次请求都不同
-        var syncCacheBuster = '?t=' + new Date().getTime() + '&r=' + Math.random();
+        
+        // 为同步请求生成新的缓存破坏参数
+        var syncCacheBuster = '?sync=' + new Date().getTime() + '&r=' + Math.random().toString(36).substring(7) + '&v=' + Math.floor(Math.random() * 1000000);
+        
         var syncUrl = urlToFetch + syncCacheBuster;
         var base = window.location.href;
         base = base.substring(0, base.lastIndexOf('/') + 1);
         if (!syncUrl.match(/^https?:\/\//)) {
             syncUrl = base + syncUrl;
         }
+        
         try {
-            syncXhr.open('GET', syncUrl, false); // false 表示同步
+            syncXhr.open('GET', syncUrl, false);
             syncXhr.setRequestHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
             syncXhr.setRequestHeader('Pragma', 'no-cache');
             syncXhr.setRequestHeader('Expires', '0');
             syncXhr.send(null);
+            
             if ((syncXhr.status >= 200 && syncXhr.status < 300) || syncXhr.status === 0) {
                 callback(null, syncXhr.responseText);
             } else {
@@ -388,6 +383,77 @@ function loadSemesterConfig(cb) {
         semesterConfig = cfg;
         cb(null);
     });
+}
+
+// 加载倒计时配置
+function loadCountdownConfig(cb) {
+    fetchText('data/countdown.csv', function (err, csv) {
+        if (err) {
+            console.warn('倒计时配置加载失败:', err);
+            if (cb) cb(err);
+            return;
+        }
+        var rows = parseCSV(csv);
+        countdownConfig = []; // 改为数组，支持任意数量的倒计时
+        for (var i = 0; i < rows.length; i++) {
+            var r = rows[i];
+            if (!r || !r.grade) continue;
+            countdownConfig.push({
+                grade: r.grade,
+                name: r.name || '',
+                target_date: r.target_date || '',
+                description: r.description || ''
+            });
+        }
+        if (cb) cb(null);
+    });
+}
+
+// 更新倒计时显示
+function updateCountdown() {
+    if (!countdownDisplay) return;
+    
+    var now = new Date();
+    var html = '';
+    
+    // 年级名称映射
+    var gradeNames = {'1': '初一', '2': '初二', '3': '初三'};
+    
+    // 遍历所有倒计时配置（支持任意数量）
+    for (var i = 0; i < countdownConfig.length; i++) {
+        var config = countdownConfig[i];
+        
+        if (config && config.target_date) {
+            var targetDate = toDate(config.target_date);
+            
+            if (targetDate) {
+                var diff = targetDate - now;
+                var absDiff = Math.abs(diff);
+                var days = Math.floor(absDiff / (1000 * 60 * 60 * 24));
+                var hours = Math.floor((absDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                var minutes = Math.floor((absDiff % (1000 * 60 * 60)) / (1000 * 60));
+                var seconds = Math.floor((absDiff % (1000 * 60)) / 1000);
+                
+                var timeStr = '';
+                if (diff > 0) {
+                    timeStr = days + '天 ' + hours + '小时 ' + minutes + '分 ' + seconds + '秒';
+                } else {
+                    // 倒计时结束后显示负数计时
+                    timeStr = '-' + days + '天 ' + hours + '小时 ' + minutes + '分 ' + seconds + '秒';
+                }
+                
+                var gradeLabel = gradeNames[config.grade] || config.grade;
+                
+                html += '<div class="countdown-item grade-' + config.grade + '">'
+                    + '<div class="countdown-title">' + escapeHtml(config.name) + ' <span class="countdown-grade">(' + gradeLabel + ')</span></div>'
+                    + '<div class="countdown-time">' + timeStr + '</div>'
+                    + '<div class="countdown-desc">' + escapeHtml(config.description) + '</div>'
+                    + '</div>';
+            }
+        }
+    }
+    
+    countdownDisplay.innerHTML = html;
 }
 
 function loadAnnouncementCsv(cb) {
@@ -559,7 +625,7 @@ function renderAnnouncements() {
                     if (!imagePath.match(/^https?:\/\//) && !imagePath.match(/^data\//)) {
                         imagePath = 'data/img/' + imagePath;
                     }
-                    imageHtml += '<div class="announcement-item-image"><img src="' + imagePath + '" alt="公告图片" onclick="showImageModal(\'' + imagePath + '\')" onerror="this.src=\'\'; this.alt=\'图片加载失败\'"></div>';
+                    imageHtml += '<div class="announcement-item-image"><img src="' + imagePath + '" alt="公告图片" loading="lazy" onclick="showImageModal(\'' + imagePath + '\')" onerror="this.src=\'\'; this.alt=\'图片加载失败\'"></div>';
                 }
                 imageHtml += '</div>';
             }
@@ -576,7 +642,8 @@ function renderAnnouncements() {
                     if (!videoPath.match(/^https?:\/\//) && !videoPath.match(/^data\//)) {
                         videoPath = 'data/video/' + videoPath;
                     }
-                    videoHtml += '<div class="announcement-item-video"><video controls src="' + videoPath + '" alt="公告视频"><p>您的浏览器不支持视频播放。</p></video></div>';
+                    // 自动播放、静音、循环播放（浏览器要求自动播放必须静音）
+                    videoHtml += '<div class="announcement-item-video"><video autoplay muted loop playsinline preload="none" src="' + videoPath + '" alt="公告视频"><p>您的浏览器不支持视频播放。</p></video></div>';
                 }
                 videoHtml += '</div>';
             }
@@ -835,13 +902,71 @@ function startAutoScroll() {
     pauseBtn.innerHTML = '<i class="fas fa-pause"></i> 暂停滚动';
 }
 
+// 公告栏自动滚动功能
+function startAnnouncementAutoScroll() {
+    clearInterval(announcementScrollInterval);
+    
+    var isWaitingAtBottom = false; // 是否在底部等待
+    
+    announcementScrollInterval = setInterval(function () {
+        if (!isAnnouncementScrolling) return;
+        
+        var container = announcementList;
+        if (!container) {
+            console.warn('公告栏容器未找到，滚动暂停。');
+            clearInterval(announcementScrollInterval);
+            return;
+        }
+        
+        var containerHeight = container.offsetHeight;
+        var listHeight = container.scrollHeight;
+        
+        // 检查用户是否正在手动滚动（在非等待状态下）
+        if (!isWaitingAtBottom && container.scrollTop !== announcementScrollOffset) {
+            announcementScrollOffset = container.scrollTop;
+            return;
+        }
+        
+        // 如果在底部等待中，不进行滚动
+        if (isWaitingAtBottom) {
+            return;
+        }
+        
+        announcementScrollOffset += 1;
+        
+        // 如果滚动到底部，等待5秒后快速置顶
+        if (listHeight > 0 && announcementScrollOffset >= listHeight - containerHeight) {
+            isWaitingAtBottom = true;
+            
+            // 5秒后快速置顶
+            setTimeout(function() {
+                if (!isAnnouncementScrolling || !container) {
+                    isWaitingAtBottom = false;
+                    return;
+                }
+                
+                // 快速置顶，同时重置偏移量
+                announcementScrollOffset = 0;
+                container.scrollTop = 0;
+                isWaitingAtBottom = false;
+            }, 5000); // 等待5秒
+        }
+        
+        // 同步滚动条位置
+        container.scrollTop = announcementScrollOffset;
+    }, scrollSpeed);
+}
+
 function toggleScroll() {
     isScrolling = !isScrolling;
+    isAnnouncementScrolling = isScrolling; // 公告栏滚动状态同步
     
     if (isScrolling) {
         startAutoScroll();
+        startAnnouncementAutoScroll();
     } else {
         clearInterval(scrollInterval);
+        clearInterval(announcementScrollInterval);
         statusDot.classList.add('paused');
         statusText.textContent = '滚动已暂停';
         pauseBtn.innerHTML = '<i class="fas fa-play"></i> 继续滚动';
@@ -858,13 +983,24 @@ function resetScrollPosition() {
         container.scrollTop = 0;
     }
     
+    // 重置公告栏滚动位置
+    announcementScrollOffset = 0;
+    if (announcementList) {
+        announcementList.scrollTop = 0;
+    }
+    
     // 不再需要transform，只使用CSS的原生滚动
     // 奖惩榜的自动滚动功能
     if (!isScrolling) {
         isScrolling = true;
     }
+    if (!isAnnouncementScrolling) {
+        isAnnouncementScrolling = true;
+    }
     clearInterval(scrollInterval);
+    clearInterval(announcementScrollInterval);
     startAutoScroll();
+    startAnnouncementAutoScroll();
 }
 
 function reloadData() {
@@ -927,6 +1063,13 @@ function init() {
                         console.warn("公告加载失败:", err);
                     }
                 });
+                
+                // 加载倒计时配置
+                loadCountdownConfig(function (err) {
+                    if (err) {
+                        console.warn("倒计时配置加载失败:", err);
+                    }
+                });
 
                 var todayKey = getTodayKeyByRange() || 'current_semester';
                 var firstKey = null;
@@ -948,9 +1091,12 @@ function init() {
                     try {
                         applyFilters();
                         startAutoScroll();
+                        startAnnouncementAutoScroll(); // 启动公告栏自动滚动
                         updateCurrentTime();
+                        updateCountdown(); // 更新倒计时
                         // Android 4.4兼容处理：使用setInterval替代setTimeout
                         setInterval(updateCurrentTime, 1000);
+                        setInterval(updateCountdown, 1000); // 每秒更新倒计时
                     } catch (e) {
                         console.error("应用过滤器或启动滚动失败:", e);
                         showError('系统初始化失败', '应用过滤器或启动滚动时出错: ' + e.message);

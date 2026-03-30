@@ -52,8 +52,22 @@
     var announcementContent = document.getElementById('announcementContent');
     var announcementImages = document.getElementById('announcementImages');
     var announcementVideos = document.getElementById('announcementVideos');
-    var announcementTime = document.getElementById('announcementTime');
-    var announcementGradeFilter = document.getElementById('announcementGradeFilter');
+        var announcementTime = document.getElementById('announcementTime');
+        var announcementGradeFilter = document.getElementById('announcementGradeFilter');
+        var allCountdowns = []; // 存储所有倒计时数据
+        var loadCountdownBtn = document.getElementById('loadCountdownBtn');
+        var exportCountdownBtn = document.getElementById('exportCountdownBtn');
+        var addCountdownBtn = document.getElementById('addCountdownBtn');
+        var countdownListAdmin = document.getElementById('countdownListAdmin');
+        var countdownModal = document.getElementById('countdownModal');
+        var countdownForm = document.getElementById('countdownForm');
+        var cancelCountdownBtn = document.getElementById('cancelCountdownBtn');
+        var countdownModalTitle = document.getElementById('countdownModalTitle');
+        var countdownId = document.getElementById('countdownId');
+        var countdownGrade = document.getElementById('countdownGrade');
+        var countdownName = document.getElementById('countdownName');
+        var countdownTargetDate = document.getElementById('countdownTargetDate');
+        var countdownDescription = document.getElementById('countdownDescription');
 
     // 工具函数
     function escapeHtml(str) {
@@ -282,7 +296,7 @@
                         if (!imagePath.match(/^https?:\/\//) && !imagePath.match(/^data\//)) {
                             imagePath = 'data/img/' + imagePath;
                         }
-                        imagePreview += '<div class="announcement-item-image"><img src="' + imagePath + '" alt="公告图片" style="max-width: 100px; max-height: 100px; object-fit: contain;"></div>';
+                        imagePreview += '<div class="announcement-item-image"><img src="' + imagePath + '" alt="公告图片" loading="lazy" style="max-width: 100px; max-height: 100px; object-fit: contain;"></div>';
                     }
                     imagePreview += '</div>';
                 }
@@ -450,6 +464,222 @@
         if (index > -1) {
             allAnnouncements.splice(index, 1);
             renderAnnouncementList();
+        }
+    }
+
+    // 倒计时：从 data/countdown.csv 读取，并可导出覆盖修改后的文件
+    function loadCountdownCsv() {
+        if (loadCountdownBtn) {
+            loadCountdownBtn.disabled = true;
+            loadCountdownBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 加载中...';
+        }
+
+        fetchText('data/countdown.csv', function(err, csvText) {
+            if (loadCountdownBtn) {
+                loadCountdownBtn.disabled = false;
+                loadCountdownBtn.innerHTML = '<i class="fas fa-sync-alt"></i> 重新加载倒计时';
+            }
+
+            if (err) {
+                console.error('倒计时加载失败:', err);
+                allCountdowns = [];
+                renderCountdownList();
+                return;
+            }
+
+            var rows = parseCSV(csvText);
+            allCountdowns = [];
+
+            for (var i = 0; i < rows.length; i++) {
+                var r = rows[i] || {};
+                var grade = r.grade || r.年级 || '';
+                var name = r.name || r.名称 || '';
+                var targetDate = r.target_date || r.target_date || r.目标时间 || '';
+                var description = r.description || r.描述 || '';
+
+                if (grade && name && targetDate) {
+                    allCountdowns.push({
+                        _id: r.id || generateId(),
+                        grade: grade,
+                        name: name,
+                        targetDate: targetDate,
+                        description: description
+                    });
+                }
+            }
+
+            // 渲染倒计时列表
+            renderCountdownList();
+        });
+    }
+
+    function exportCountdownToCsv() {
+        // 构建CSV内容
+        var csvContent = 'grade,name,target_date,description\r\n';
+
+        for (var i = 0; i < allCountdowns.length; i++) {
+            var cd = allCountdowns[i];
+            var row = [
+                escapeCsvCell(cd.grade || ''),
+                escapeCsvCell(cd.name || ''),
+                escapeCsvCell(cd.targetDate || ''),
+                escapeCsvCell(cd.description || '')
+            ];
+            csvContent += row.join(',') + '\r\n';
+        }
+
+        var BOM = '\uFEFF';
+        var blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+        var url = URL.createObjectURL(blob);
+
+        var filename = 'countdown.csv';
+
+        var link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', filename);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        alert('倒计时已导出: ' + filename + '\n请将此文件放到 data/ 目录下，替换原 countdown.csv 文件');
+    }
+
+    // 渲染倒计时列表
+    function renderCountdownList() {
+        if (!countdownListAdmin) return;
+
+        if (allCountdowns.length === 0) {
+            countdownListAdmin.innerHTML = '<div class="no-data"><i class="far fa-clock"></i><p>暂无倒计时</p></div>';
+            return;
+        }
+
+        var html = '';
+        for (var i = 0; i < allCountdowns.length; i++) {
+            var cd = allCountdowns[i];
+            var gradeMap = { '1': '初一', '2': '初二', '3': '初三' };
+            var gradeLabel = gradeMap[cd.grade] || cd.grade;
+
+            html += '<div class="countdown-item-admin" data-id="' + escapeHtml(cd._id) + '">';
+            html += '  <div class="countdown-item-header">';
+            html += '    <span class="countdown-item-grade">' + escapeHtml(gradeLabel) + '</span>';
+            html += '    <span class="countdown-item-name">' + escapeHtml(cd.name) + '</span>';
+            html += '    <div class="countdown-item-actions">';
+            html += '      <button class="action-btn edit" data-id="' + escapeHtml(cd._id) + '"><i class="fas fa-edit"></i> 编辑</button>';
+            html += '      <button class="action-btn delete" data-id="' + escapeHtml(cd._id) + '"><i class="fas fa-trash-alt"></i> 删除</button>';
+            html += '    </div>';
+            html += '  </div>';
+            html += '  <div class="countdown-item-body">';
+            html += '    <div class="countdown-item-time"><i class="far fa-clock"></i> 目标时间: ' + escapeHtml(cd.targetDate) + '</div>';
+            html += '    ' + (cd.description ? '<div class="countdown-item-description">' + escapeHtml(cd.description) + '</div>' : '');
+            html += '  </div>';
+            html += '</div>';
+        }
+
+        countdownListAdmin.innerHTML = html;
+
+        // 绑定编辑和删除按钮事件
+        var editButtons = countdownListAdmin.querySelectorAll('.action-btn.edit');
+        for (var m = 0; m < editButtons.length; m++) {
+            editButtons[m].addEventListener('click', function(e) {
+                var id = e.currentTarget.getAttribute('data-id');
+                openCountdownModal(id);
+            });
+        }
+
+        var deleteButtons = countdownListAdmin.querySelectorAll('.action-btn.delete');
+        for (var n = 0; n < deleteButtons.length; n++) {
+            deleteButtons[n].addEventListener('click', function(e) {
+                var id = e.currentTarget.getAttribute('data-id');
+                if (confirm('确定要删除这个倒计时吗？')) {
+                    deleteCountdown(id);
+                }
+            });
+        }
+    }
+
+    // 打开倒计时编辑模态框
+    function openCountdownModal(id) {
+        var countdown = null;
+        for (var i = 0; i < allCountdowns.length; i++) {
+            if (allCountdowns[i]._id === id) {
+                countdown = allCountdowns[i];
+                break;
+            }
+        }
+
+        if (id && countdown) {
+            // 编辑模式
+            countdownModalTitle.textContent = '编辑倒计时';
+            countdownId.value = id;
+            countdownGrade.value = countdown.grade;
+            countdownName.value = countdown.name;
+            countdownTargetDate.value = countdown.targetDate.replace(' ', 'T');
+            countdownDescription.value = countdown.description || '';
+        } else {
+            // 新增模式
+            countdownModalTitle.textContent = '新增倒计时';
+            countdownId.value = '';
+            countdownGrade.value = '1';
+            countdownName.value = '';
+            countdownTargetDate.value = '';
+            countdownDescription.value = '';
+        }
+
+        countdownModal.style.display = 'flex';
+    }
+
+    // 关闭倒计时编辑模态框
+    function closeCountdownModal() {
+        countdownModal.style.display = 'none';
+        countdownForm.reset();
+        countdownId.value = '';
+    }
+
+    // 保存倒计时
+    function saveCountdown(formData) {
+        var id = formData.id;
+
+        if (id) {
+            // 编辑模式
+            for (var i = 0; i < allCountdowns.length; i++) {
+                if (allCountdowns[i]._id === id) {
+                    allCountdowns[i].grade = formData.grade;
+                    allCountdowns[i].name = formData.name;
+                    allCountdowns[i].targetDate = formData.targetDate.replace('T', ' ');
+                    allCountdowns[i].description = formData.description;
+                    break;
+                }
+            }
+        } else {
+            // 新增模式
+            var newCountdown = {
+                _id: generateId(),
+                grade: formData.grade,
+                name: formData.name,
+                targetDate: formData.targetDate.replace('T', ' '),
+                description: formData.description
+            };
+            allCountdowns.unshift(newCountdown);
+        }
+
+        renderCountdownList();
+        closeCountdownModal();
+    }
+
+    // 删除倒计时
+    function deleteCountdown(id) {
+        var index = -1;
+        for (var i = 0; i < allCountdowns.length; i++) {
+            if (allCountdowns[i]._id === id) {
+                index = i;
+                break;
+            }
+        }
+
+        if (index > -1) {
+            allCountdowns.splice(index, 1);
+            renderCountdownList();
         }
     }
 
@@ -976,6 +1206,41 @@
             });
         }
 
+        // 倒计时
+        if (loadCountdownBtn) loadCountdownBtn.addEventListener('click', loadCountdownCsv);
+        if (exportCountdownBtn) exportCountdownBtn.addEventListener('click', exportCountdownToCsv);
+        if (addCountdownBtn) addCountdownBtn.addEventListener('click', function() {
+            openCountdownModal(null);
+        });
+        if (cancelCountdownBtn) cancelCountdownBtn.addEventListener('click', closeCountdownModal);
+        if (countdownForm) {
+            countdownForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                var formData = {
+                    id: countdownId.value,
+                    grade: countdownGrade.value,
+                    name: countdownName.value,
+                    targetDate: countdownTargetDate.value,
+                    description: countdownDescription.value
+                };
+
+                if (!formData.name.trim()) {
+                    alert('请填写倒计时名称');
+                    return;
+                }
+
+                if (!formData.targetDate.trim()) {
+                    alert('请选择目标时间');
+                    return;
+                }
+
+                saveCountdown(formData);
+            });
+        }
+        if (countdownModal) {
+            countdownModal.querySelector('.modal-close').addEventListener('click', closeCountdownModal);
+        }
+
         // 行内保存/取消/删除（事件委托：只绑定一次，避免重复弹窗确认）
         tableBody.addEventListener('click', function(e) {
             if (!e.target || !e.target.classList) return;
@@ -1064,6 +1329,7 @@
         initSemesterSelect();
         bindEvents();
         loadAnnouncementCsv(); // 初始化公告栏内容
+        loadCountdownCsv(); // 初始化倒计时内容
         console.log('管理后台初始化完成 (本地模式)');
     }
 

@@ -160,6 +160,8 @@
 }
 .table-wrapper {
     overflow-x: auto;
+    overflow-y: auto;
+    max-height: 600px;
     border: 1px solid #dfe6e9;
     border-radius: 8px;
     background: #f8f9fa;
@@ -188,27 +190,27 @@
     border-bottom: 2px solid #3498db;
     z-index: 10;
 }
-.editable-table thead th input[type="checkbox"] {
+.records-table thead th input[type="checkbox"] {
     margin: 0;
 }
-.editable-table tbody td {
+.records-table tbody td {
     padding: 10px 15px;
     border-bottom: 1px solid #ecf0f1;
     vertical-align: middle;
     transition: background-color 0.2s;
 }
-.editable-table tbody tr:hover {
+.records-table tbody tr:hover {
     background-color: #f8f9fa;
 }
-.editable-table tbody tr.selected {
+.records-table tbody tr.selected {
     background-color: #e3f2fd;
 }
-.editable-table tbody tr td:first-child {
+.records-table tbody tr td:first-child {
     text-align: center;
 }
-.editable-table input[type="text"],
-.editable-table input[type="number"],
-.editable-table select {
+.records-table input[type="text"],
+.records-table input[type="number"],
+.records-table select {
     width: 100%;
     padding: 6px 10px;
     border: 1px solid #ddd;
@@ -217,19 +219,19 @@
     outline: none;
     transition: border 0.3s;
 }
-.editable-table input:focus,
-.editable-table select:focus {
+.records-table input:focus,
+.records-table select:focus {
     border-color: #3498db;
     box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
 }
-.editable-table .editable-cell {
+.records-table .editable-cell {
     position: relative;
     cursor: pointer;
     min-height: 30px;
     /* 保持 td 的 table-cell 布局，避免被 flex 打散成竖排 */
     display: table-cell;
 }
-.editable-table .editable-cell:hover::after {
+.records-table .editable-cell:hover::after {
     content: '✎';
     position: absolute;
     right: 5px;
@@ -240,21 +242,21 @@
     text-align: center;
     pointer-events: none;
 }
-.editable-table .cell-display {
+.records-table .cell-display {
     padding: 6px 0;
     width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-.editable-table .cell-edit {
+.records-table .cell-edit {
     display: none;
     width: 100%;
 }
-.editable-table .editing .cell-display {
+.records-table .editing .cell-display {
     display: none;
 }
-.editable-table .editing .cell-edit {
+.records-table .editing .cell-edit {
     display: block;
 }
 .action-buttons {
@@ -526,6 +528,207 @@ textarea.form-control {
 .announcement-item-time i {
     margin-right: 5px;
     color: #3498db;
+}
+
+/* 倒计时管理样式 */
+.countdown-list-container {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid #764ba2;
+    box-shadow: 0 4px 15px rgba(118, 75, 162, 0.3);
+}
+
+.countdown-list-container {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 20px;
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+}
+
+.countdown-list-container h4 {
+    color: white;
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.countdown-list-admin {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.countdown-item-admin {
+    background: white;
+    border-radius: 12px;
+    padding: 18px;
+    border-left: 5px solid #667eea;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.countdown-item-admin::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.countdown-item-admin:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.2);
+}
+
+.countdown-item-admin:hover::before {
+    opacity: 1;
+}
+
+.countdown-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.countdown-item-grade {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-left: 8px;
+    box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3);
+}
+
+.countdown-item-name {
+    color: #2c3e50;
+    font-weight: 700;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.countdown-item-name::before {
+    content: '⏱';
+    font-size: 1.2rem;
+    color: #667eea;
+}
+
+.countdown-item-target {
+    color: #667eea;
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.countdown-item-target::before {
+    content: '📅';
+    font-size: 1rem;
+}
+
+.countdown-item-description {
+    color: #7f8c8d;
+    font-size: 0.9rem;
+    margin-bottom: 12px;
+    padding: 8px 12px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border-left: 3px solid #667eea;
+}
+
+.countdown-item-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.countdown-item-actions .action-btn.edit {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+}
+
+.countdown-item-actions .action-btn.edit:hover {
+    background: #5568d3;
+    transform: translateY(-1px);
+}
+
+.countdown-item-actions .action-btn.delete {
+    background: #e74c3c;
+    color: white;
+    padding: 5px 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+}
+
+.countdown-item-actions .action-btn.delete:hover {
+    background: #c0392b;
+    transform: translateY(-1px);
+}
+
+.countdown-item-body {
+    margin-top: 10px;
+}
+
+.countdown-item-time {
+    display: flex;
+    align-items: center;
+    color: #667eea;
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.countdown-item-time i {
+    margin-right: 5px;
+    color: #764ba2;
+}
+
+.countdown-item-description {
+    color: #5a6c7d;
+    font-size: 0.9rem;
+    font-style: italic;
+    padding-left: 20px;
+    border-left: 3px solid #ecf0f1;
+}
+
+.no-data {
+    text-align: center;
+    padding: 30px;
+    color: #95a5a6;
+}
+
+.no-data i {
+    font-size: 3rem;
+    margin-bottom: 10px;
+    opacity: 0.5;
+}
+
+.no-data p {
+    margin: 0;
+    font-size: 1rem;
 }
 
 /* 响应式调整 */

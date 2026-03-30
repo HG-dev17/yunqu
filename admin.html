@@ -100,20 +100,73 @@
             </div>
 
             <div class="panel-section">
-                <h3><i class="fas fa-search"></i> 表格内筛选</h3>
-                <div class="control-group">
-                    <select class="filter-select" id="adminGradeFilter">
-                        <option value="all">全部年级</option>
-                        <option value="初一">初一</option>
-                        <option value="初二">初二</option>
-                        <option value="初三">初三</option>
-                    </select>
-                    <input type="text" id="tableSearchInput" placeholder="在已加载的表格中筛选" class="search-box-input">
-                    <button id="clearSearchBtn" class="control-btn">
-                        <i class="fas fa-times"></i> 清空
-                    </button>
-                </div>
-            </div>
+                            <h3><i class="fas fa-hourglass-half"></i> 倒计时管理</h3>
+
+                            <div class="button-group" style="margin-top: 10px;">
+                                <button id="addCountdownBtn" class="control-btn success" title="添加新倒计时">
+                                    <i class="fas fa-plus-circle"></i> 新增倒计时
+                                </button>
+                                <button id="loadCountdownBtn" class="control-btn" title="重新加载倒计时文件">
+                                    <i class="fas fa-sync-alt"></i> 重新加载倒计时
+                                </button>
+                                <button id="exportCountdownBtn" class="control-btn warning" title="导出倒计时修改文件以覆盖 CSV">
+                                    <i class="fas fa-save"></i> 导出倒计时修改
+                                </button>
+                            </div>
+
+                            <div class="hint">
+                                <i class="fas fa-info-circle"></i> 修改倒计时后请点击"<strong>导出倒计时修改</strong>"，再手动替换 <strong>data/countdown.csv</strong>。
+                            </div>
+
+                            <!-- 倒计时列表 -->
+                            <div class="countdown-list-container" style="margin-top: 20px;">
+                                <h4>倒计时列表</h4>
+                                <div id="countdownListAdmin" class="countdown-list-admin">
+                                    <!-- 倒计时列表将通过JS动态生成 -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="panel-section">
+                            <h3><i class="fas fa-search"></i> 表格内筛选</h3>
+                            <div class="control-group">
+                                <select class="filter-select" id="adminGradeFilter">
+                                    <option value="all">全部年级</option>
+                                    <option value="初一">初一</option>
+                                    <option value="初二">初二</option>
+                                    <option value="初三">初三</option>
+                                </select>
+                                <select class="filter-select" id="adminTypeFilter">
+                                    <option value="all">全部类型</option>
+                                    <option value="奖">仅奖励(奖)</option>
+                                    <option value="惩">仅惩罚(惩)</option>
+                                </select>
+                            </div>
+                            <div class="control-group">
+                                <select class="filter-select" id="adminMethodFilter">
+                                    <option value="all">全部奖惩方式</option>
+                                </select>
+                                <select class="filter-select" id="adminStatusFilter">
+                                    <option value="all">全部状态</option>
+                                </select>
+                            </div>
+                            <div class="control-group">
+                                <div class="date-range">
+                                    <label>开始</label>
+                                    <input type="date" id="adminStartDate">
+                                </div>
+                                <div class="date-range">
+                                    <label>结束</label>
+                                    <input type="date" id="adminEndDate">
+                                </div>
+                            </div>
+                            <div class="control-group">
+                                <input type="text" id="tableSearchInput" placeholder="搜索：人物/事项/管理员/方式/状态..." class="search-box-input">
+                                <button id="clearSearchBtn" class="control-btn">
+                                    <i class="fas fa-times"></i> 清空筛选
+                                </button>
+                            </div>
+                        </div>
         </div>
 
         <!-- 主数据表格区域 -->
@@ -133,21 +186,21 @@
                 </div>
             </div>
 
-            <div class="table-wrapper">
-                <table id="dataTable" class="editable-table">
+            <div class="table-wrap">
+                <table id="dataTable" class="records-table">
                     <thead>
                         <tr>
-                            <th width="40px"><input type="checkbox" id="masterCheckbox"></th>
-                            <th width="60px">年级</th>
-                            <th width="60px">类型</th>
-                            <th width="120px">人物</th>
+                            <th><input type="checkbox" id="masterCheckbox"></th>
+                            <th>年级</th>
+                            <th>类型</th>
+                            <th>人物</th>
                             <th>事项</th>
-                            <th width="150px">时间</th>
-                            <th width="120px">管理员</th>
-                            <th width="100px">方式</th>
-                            <th width="80px">分值</th>
-                            <th width="100px">状态</th>
-                            <th width="100px">操作</th>
+                            <th>时间</th>
+                            <th>管理员/处理人</th>
+                            <th>方式</th>
+                            <th>分值</th>
+                            <th>状态</th>
+                            <th>操作</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody">
@@ -273,6 +326,45 @@
                 <div class="modal-footer">
                     <button type="button" class="control-btn" id="cancelAnnouncementBtn">取消</button>
                     <button type="submit" form="announcementForm" class="control-btn primary">保存</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 倒计时编辑表单 (模态框) -->
+        <div id="countdownModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-hourglass-half"></i> <span id="countdownModalTitle">新增倒计时</span></h3>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="countdownForm">
+                        <input type="hidden" id="countdownId">
+                        <div class="form-group">
+                            <label for="countdownGrade">年级 <span class="required">*</span></label>
+                            <select id="countdownGrade" class="form-control" required>
+                                <option value="1">初一</option>
+                                <option value="2">初二</option>
+                                <option value="3">初三</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="countdownName">倒计时名称 <span class="required">*</span></label>
+                            <input type="text" id="countdownName" class="form-control" placeholder="例如：中考倒计时" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="countdownTargetDate">目标时间 <span class="required">*</span></label>
+                            <input type="datetime-local" id="countdownTargetDate" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="countdownDescription">描述</label>
+                            <textarea id="countdownDescription" class="form-control" rows="2" placeholder="例如：加油努力！"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="control-btn" id="cancelCountdownBtn">取消</button>
+                    <button type="submit" form="countdownForm" class="control-btn primary">保存</button>
                 </div>
             </div>
         </div>

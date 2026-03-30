@@ -254,6 +254,8 @@ h1:after {
     border-radius: 4px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     display: block;
+    /* 确保视频在非全屏模式下也能正常显示 */
+    width: 100%;
 }
 
 .announcement-item-grade {
@@ -496,9 +498,12 @@ footer {
     margin-top: 15px;
     background: rgba(255, 255, 255, 0.9);
     border-radius: 12px;
-    padding: 10px;
-    overflow: auto;
+    padding: 0;
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: 600px;
     box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+    position: relative;
 }
 
 .records-table {
@@ -516,7 +521,7 @@ footer {
     font-weight: 700;
     padding: 10px 12px;
     border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-    z-index: 1;
+    z-index: 10;
 }
 
 .records-table tbody td {
@@ -743,5 +748,105 @@ footer {
     }
     .column-content-single {
         height: 500px; /* 在移动端可适当调整高度 */
+    }
+}
+
+/* 倒计时区域样式 */
+.countdown-section {
+    margin-bottom: 30px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.countdown-display {
+    display: flex;
+    justify-content: space-around;
+    align-items: stretch;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.countdown-item {
+    flex: 1;
+    min-width: 250px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.countdown-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.countdown-item.grade-1 {
+    border-top: 4px solid #2ecc71;
+}
+
+.countdown-item.grade-2 {
+    border-top: 4px solid #3498db;
+}
+
+.countdown-item.grade-3 {
+    border-top: 4px solid #e74c3c;
+}
+
+.countdown-title {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #2c3e50;
+    margin-bottom: 10px;
+}
+
+.countdown-grade {
+    font-size: 0.9rem;
+    color: #7f8c8d;
+    font-weight: normal;
+}
+
+.countdown-time {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #34495e;
+    margin: 15px 0;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 2px;
+}
+
+.countdown-item.grade-1 .countdown-time {
+    color: #27ae60;
+}
+
+.countdown-item.grade-2 .countdown-time {
+    color: #2980b9;
+}
+
+.countdown-item.grade-3 .countdown-time {
+    color: #c0392b;
+}
+
+.countdown-desc {
+    font-size: 0.9rem;
+    color: #7f8c8d;
+    margin-top: 10px;
+    font-style: italic;
+}
+
+@media (max-width: 768px) {
+    .countdown-display {
+        flex-direction: column;
+    }
+    
+    .countdown-item {
+        min-width: 100%;
+    }
+    
+    .countdown-time {
+        font-size: 1.4rem;
     }
 }

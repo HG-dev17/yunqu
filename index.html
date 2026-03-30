@@ -79,36 +79,43 @@
 
         
         <!-- 奖惩榜和公告栏左右布局 -->
-        <div class="content-area">
-        <!-- 奖惩栏 -->
-            <div class="column">
-                <div class="column-header combined-header">
-                    <i class="fas fa-balance-scale"></i> 学生奖惩公示栏
-                    <span id="combinedCount" style="font-size: 0.8rem; margin-left: 10px;"></span>
-                </div>
-                <div class="column-content-single">
-                    <div class="scroll-list-single" id="combinedList">
-                        <!-- 奖惩记录将统一在此动态生成 -->
+                <div class="content-area">
+                <!-- 奖惩栏 -->
+                    <div class="column">
+                        <div class="column-header combined-header">
+                            <i class="fas fa-balance-scale"></i> 学生奖惩公示栏
+                            <span id="combinedCount" style="font-size: 0.8rem; margin-left: 10px;"></span>
+                        </div>
+                        <div class="column-content-single">
+                            <div class="scroll-list-single" id="combinedList">
+                                <!-- 奖惩记录将统一在此动态生成 -->
+                            </div>
+                        </div>
+                    </div>
+            
+                    <!-- 公告栏 -->
+                    <div class="column">
+                        <div class="column-header announcement-header">
+                            <i class="fas fa-bullhorn"></i>&ensp;公告栏
+                            <select class="announcement-grade-filter" id="announcementGradeFilter">
+                                <option value="all">全部年级</option>
+                                <option value="1">初一</option>
+                                <option value="2">初二</option>
+                                <option value="3">初三</option>
+                            </select>
+                        </div>
+                        <div class="column-content">
+                            <div id="announcementList" class="announcement-list"></div>
+                        </div>
                     </div>
                 </div>
-            </div>
-            
-            <!-- 公告栏 -->
-            <div class="column">
-                <div class="column-header announcement-header">
-                    <i class="fas fa-bullhorn"></i>&ensp;公告栏
-                    <select class="announcement-grade-filter" id="announcementGradeFilter">
-                        <option value="all">全部年级</option>
-                        <option value="1">初一</option>
-                        <option value="2">初二</option>
-                        <option value="3">初三</option>
-                    </select>
+
+                <!-- 倒计时区域 -->
+                <div class="countdown-section">
+                    <div id="countdownDisplay" class="countdown-display">
+                        <!-- 倒计时将通过JavaScript动态生成 -->
+                    </div>
                 </div>
-                <div class="column-content">
-                    <div id="announcementList" class="announcement-list"></div>
-                </div>
-            </div>
-        </div>
 
         <div class="scroll-status">
             <div class="status-dot" id="statusDot"></div>
