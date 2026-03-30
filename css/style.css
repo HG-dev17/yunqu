@@ -220,6 +220,11 @@ h1:after {
     display: -webkit-flex;
     -webkit-flex-wrap: wrap;
     -webkit-justify-content: center;
+    /* Android 4.4.4.4 兼容：防止内容溢出 */
+    overflow: hidden;
+    width: 100%;
+    -webkit-box-sizing: border-box;
+    box-sizing: border-box;
 }
 
 .announcement-item-image {
@@ -232,6 +237,12 @@ h1:after {
     /* 限制宽度避免过大图片 */
     max-width: 200px;
     width: auto;
+    /* Android 4.4.4.4 兼容：防止图片溢出 */
+    display: inline-block;
+    vertical-align: top;
+    overflow: hidden;
+    -webkit-box-sizing: border-box;
+    box-sizing: border-box;
 }
 
 .announcement-item-image img {
@@ -258,20 +269,11 @@ h1:after {
     flex-wrap: wrap;
     gap: 10px;
     justify-content: center;
-    /* Android 4.4 兼容：使用更稳定的布局 */
-    display: -webkit-flex;
-    -webkit-flex-wrap: wrap;
-    -webkit-justify-content: center;
 }
 
 .announcement-item-video {
     flex: 0 0 auto;
     max-width: 100%;
-    /* Android 4.4 兼容 */
-    -webkit-flex: 0 0 auto;
-    /* 限制宽度避免视频过大 */
-    max-width: 100%;
-    width: auto;
 }
 
 .announcement-item-video video {
@@ -284,9 +286,6 @@ h1:after {
     display: block;
     /* 确保视频在非全屏模式下也能正常显示 */
     width: 100%;
-    /* Android 4.4 兼容：防止视频超出容器 */
-    -webkit-box-sizing: border-box;
-    box-sizing: border-box;
 }
 
 .announcement-item-grade {
