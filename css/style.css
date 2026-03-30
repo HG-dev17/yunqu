@@ -258,11 +258,20 @@ h1:after {
     flex-wrap: wrap;
     gap: 10px;
     justify-content: center;
+    /* Android 4.4 兼容：使用更稳定的布局 */
+    display: -webkit-flex;
+    -webkit-flex-wrap: wrap;
+    -webkit-justify-content: center;
 }
 
 .announcement-item-video {
     flex: 0 0 auto;
     max-width: 100%;
+    /* Android 4.4 兼容 */
+    -webkit-flex: 0 0 auto;
+    /* 限制宽度避免视频过大 */
+    max-width: 100%;
+    width: auto;
 }
 
 .announcement-item-video video {
@@ -275,6 +284,9 @@ h1:after {
     display: block;
     /* 确保视频在非全屏模式下也能正常显示 */
     width: 100%;
+    /* Android 4.4 兼容：防止视频超出容器 */
+    -webkit-box-sizing: border-box;
+    box-sizing: border-box;
 }
 
 .announcement-item-grade {
@@ -370,6 +382,11 @@ h1:after {
     -webkit-box-flex: 1;
     -webkit-flex: 1;
     flex: 1;
+    /* Android 4.4 兼容：确保内容正确换行和限制 */
+    word-wrap: break-word;
+    word-break: break-all;
+    -webkit-word-wrap: break-word;
+    -webkit-word-break: break-all;
 }
 
 .scroll-list {
