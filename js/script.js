@@ -614,7 +614,7 @@ function renderAnnouncements() {
         }
         var formattedText = escapeHtml(ann.text).replace(/\n/g, '<br>');
 
-        // 处理多个图片
+        // 处理多个图片 - Android 4.4 优化
         var imageHtml = '';
         if (ann.image && ann.image.trim()) {
             var images = ann.image.split('|').filter(function(img) { return img && img.trim(); });
@@ -625,13 +625,16 @@ function renderAnnouncements() {
                     if (!imagePath.match(/^https?:\/\//) && !imagePath.match(/^data\//)) {
                         imagePath = 'data/img/' + imagePath;
                     }
-                    imageHtml += '<div class="announcement-item-image"><img src="' + imagePath + '" alt="公告图片" loading="lazy" onclick="showImageModal(\'' + imagePath + '\')" onerror="this.src=\'\'; this.alt=\'图片加载失败\'"></div>';
+                    // Android 4.4 兼容：使用 data-src 懒加载，避免同时加载过多图片
+                    // 移除 loading="lazy"（Android 4.4 不支持）
+                    // 添加 data-original 存储真实路径
+                    imageHtml += '<div class="announcement-item-image"><img data-src="' + imagePath + '" src="" alt="公告图片" onclick="showImageModal(\'' + imagePath + '\')" onerror="this.src=\'\'; this.alt=\'图片加载失败\'" style="background-color:#f0f0f0;min-height:150px;"></div>';
                 }
                 imageHtml += '</div>';
             }
         }
 
-        // 处理多个视频
+        // 处理多个视频 - Android 4.4 优化
         var videoHtml = '';
         if (ann.video && ann.video.trim()) {
             var videos = ann.video.split('|').filter(function(vid) { return vid && vid.trim(); });
@@ -643,7 +646,8 @@ function renderAnnouncements() {
                         videoPath = 'data/video/' + videoPath;
                     }
                     // 自动播放、静音、循环播放（浏览器要求自动播放必须静音）
-                    videoHtml += '<div class="announcement-item-video"><video autoplay muted loop playsinline preload="none" src="' + videoPath + '" alt="公告视频"><p>您的浏览器不支持视频播放。</p></video></div>';
+                    // Android 4.4 兼容：使用 data-src 懒加载视频
+                    videoHtml += '<div class="announcement-item-video"><video data-src="' + videoPath + '" autoplay muted loop playsinline preload="none" alt="公告视频"><p>您的浏览器不支持视频播放。</p></video></div>';
                 }
                 videoHtml += '</div>';
             }
@@ -1208,3 +1212,61 @@ if (document.readyState === 'loading') {
 } else {
     safeInit();
 }
+
+// Android 4.4 图片懒加载功能 - 分批加载避免浏览器卡顿
+function lazyLoadImages() {
+    var images = document.querySelectorAll('img[data-src]');
+    var videos = document.querySelectorAll('video[data-src]');
+    var loadIndex = 0;
+    var batchSize = 3; // 每次加载3张图片，避免同时加载过多
+    
+    function loadNextBatch() {
+        // 加载图片
+        for (var i = 0; i < batchSize && loadIndex < images.length; i++) {
+            var img = images[loadIndex];
+            if (img && img.getAttribute('data-src')) {
+                var src = img.getAttribute('data-src');
+                img.src = src;
+                img.removeAttribute('data-src');
+            }
+            loadIndex++;
+        }
+        
+        if (loadIndex < images.length) {
+            // 延迟200ms加载下一批，给浏览器喘息时间
+            setTimeout(loadNextBatch, 200);
+        } else {
+            // 图片加载完成后，加载视频
+            lazyLoadVideos();
+        }
+    }
+    
+    loadNextBatch();
+}
+
+// Android 4.4 视频懒加载功能
+function lazyLoadVideos() {
+    var videos = document.querySelectorAll('video[data-src]');
+    for (var i = 0; i < videos.length; i++) {
+        var video = videos[i];
+        if (video && video.getAttribute('data-src')) {
+            var src = video.getAttribute('data-src');
+            video.src = src;
+            video.removeAttribute('data-src');
+            // 尝试播放视频
+            try {
+                video.play();
+            } catch (e) {
+                console.warn('视频自动播放失败:', e);
+            }
+        }
+    }
+}
+
+// 重写 renderAnnouncements 函数，在渲染后调用懒加载
+var originalRenderAnnouncements = renderAnnouncements;
+renderAnnouncements = function() {
+    originalRenderAnnouncements();
+    // 延迟100ms后开始懒加载图片
+    setTimeout(lazyLoadImages, 100);
+};

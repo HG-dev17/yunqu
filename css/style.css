@@ -216,11 +216,22 @@ h1:after {
     flex-wrap: wrap;
     gap: 10px;
     justify-content: center;
+    /* Android 4.4 兼容：使用更稳定的布局 */
+    display: -webkit-flex;
+    -webkit-flex-wrap: wrap;
+    -webkit-justify-content: center;
 }
 
 .announcement-item-image {
     flex: 0 0 auto;
     max-width: 100%;
+    /* Android 4.4 兼容 */
+    -webkit-flex: 0 0 auto;
+    /* 防止布局偏移：设置最小高度占位 */
+    min-height: 150px;
+    /* 限制宽度避免过大图片 */
+    max-width: 200px;
+    width: auto;
 }
 
 .announcement-item-image img {
@@ -231,6 +242,14 @@ h1:after {
     border-radius: 4px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     display: block;
+    /* 防止布局偏移：设置背景色占位 */
+    background-color: #f0f0f0;
+    /* 固定尺寸避免加载时布局跳动 */
+    width: 100%;
+    min-height: 150px;
+    /* Android 4.4 兼容 */
+    -webkit-box-sizing: border-box;
+    box-sizing: border-box;
 }
 
 .announcement-item-videos {
@@ -331,6 +350,9 @@ h1:after {
     position: relative;
     display: flex;
     flex-direction: column;
+    /* Android 4.4 兼容 */
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
 }
 
 /* 公告列表容器特殊样式 - 支持循环滚动和自适应高度 */
@@ -340,6 +362,14 @@ h1:after {
     overflow-x: hidden;
     padding-right: 5px;
     position: relative;
+    /* Android 4.4 兼容：强制硬件加速 */
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+    /* 防止布局错位 */
+    min-height: 0;
+    -webkit-box-flex: 1;
+    -webkit-flex: 1;
+    flex: 1;
 }
 
 .scroll-list {
