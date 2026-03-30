@@ -646,8 +646,9 @@ function renderAnnouncements() {
                         videoPath = 'data/video/' + videoPath;
                     }
                     // 自动播放、静音、循环播放（浏览器要求自动播放必须静音）
-                    // Android 4.4 兼容：使用 data-src 懒加载视频
-                    videoHtml += '<div class="announcement-item-video"><video data-src="' + videoPath + '" autoplay muted loop playsinline preload="none" alt="公告视频"><p>您的浏览器不支持视频播放。</p></video></div>';
+                                        // Android 4.4.4.4 兼容：添加 webkit-playsinline 和 x-webkit-airplay="deny" 防止自动全屏
+                                        // Android 4.4 兼容：使用 data-src 懒加载视频
+                                        videoHtml += '<div class="announcement-item-video"><video data-src="' + videoPath + '" autoplay muted loop playsinline webkit-playsinline x-webkit-airplay="deny" preload="none" alt="公告视频"><p>您的浏览器不支持视频播放。</p></video></div>';
                 }
                 videoHtml += '</div>';
             }
