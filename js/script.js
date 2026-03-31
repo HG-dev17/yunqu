@@ -635,23 +635,24 @@ function renderAnnouncements() {
         }
 
         // 处理多个视频 - Android 4.4 优化
-        var videoHtml = '';
-        if (ann.video && ann.video.trim()) {
-            var videos = ann.video.split('|').filter(function(vid) { return vid && vid.trim(); });
-            if (videos.length > 0) {
-                videoHtml = '<div class="announcement-item-videos">';
-                for (var j = 0; j < videos.length; j++) {
-                    var videoPath = videos[j].trim();
-                    if (!videoPath.match(/^https?:\/\//) && !videoPath.match(/^data\//)) {
-                        videoPath = 'data/video/' + videoPath;
+                var videoHtml = '';
+                if (ann.video && ann.video.trim()) {
+                    var videos = ann.video.split('|').filter(function(vid) { return vid && vid.trim(); });
+                    if (videos.length > 0) {
+                        videoHtml = '<div class="announcement-item-videos">';
+                        for (var j = 0; j < videos.length; j++) {
+                            var videoPath = videos[j].trim();
+                            if (!videoPath.match(/^https?:\/\//) && !videoPath.match(/^data\//)) {
+                                videoPath = 'data/video/' + videoPath;
+                            }
+                            // Android 4.4 兼容：添加多种防止自动全屏的属性
+                            // 添加 controls 让用户可以手动控制播放
+                            // 移除 autoplay，避免安卓4.4自动全屏
+                            videoHtml += '<div class="announcement-item-video"><video data-src="' + videoPath + '" muted loop playsinline webkit-playsinline x-webkit-airplay="allow" preload="none" controls><p>您的浏览器不支持视频播放。</p></video></div>';
+                        }
+                        videoHtml += '</div>';
                     }
-                    // 自动播放、静音、循环播放（浏览器要求自动播放必须静音）
-                    // Android 4.4 兼容：使用 data-src 懒加载视频
-                    videoHtml += '<div class="announcement-item-video"><video data-src="' + videoPath + '" autoplay muted loop playsinline preload="none" alt="公告视频"><p>您的浏览器不支持视频播放。</p></video></div>';
                 }
-                videoHtml += '</div>';
-            }
-        }
 
         item.innerHTML = ''
             + gradeLabel
