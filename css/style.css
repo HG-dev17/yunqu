@@ -188,7 +188,7 @@ h1:after {
 .announcement-list {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    /* Android 4.4.4.4 不支持 gap 属性，使用 margin-bottom 代替 */
 }
 
 .announcement-item {
@@ -197,6 +197,13 @@ h1:after {
     padding: 12px 15px;
     border-left: 4px solid #3498db;
     transition: all 0.3s;
+    /* Android 4.4.4.4 兼容：使用 margin-bottom 替代 gap */
+    margin-bottom: 10px;
+}
+
+/* 最后一个公告条不需要底部间距 */
+.announcement-item:last-child {
+    margin-bottom: 0;
 }
 
 .announcement-item:hover {

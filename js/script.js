@@ -645,10 +645,12 @@ function renderAnnouncements() {
                             if (!videoPath.match(/^https?:\/\//) && !videoPath.match(/^data\//)) {
                                 videoPath = 'data/video/' + videoPath;
                             }
-                            // Android 4.4 兼容：添加多种防止自动全屏的属性
-                            // 添加 controls 让用户可以手动控制播放
-                            // 移除 autoplay，避免安卓4.4自动全屏
-                            videoHtml += '<div class="announcement-item-video"><video data-src="' + videoPath + '" muted loop playsinline webkit-playsinline x-webkit-airplay="allow" preload="none" controls><p>您的浏览器不支持视频播放。</p></video></div>';
+                            // Android 4.4.4.4 兼容：自动播放但防止希沃浏览器全屏
+                            // muted + autoplay 可以实现自动播放
+                            // playsinline, webkit-playsinline, x5-video-player-type="h5", x5-video-player-fullscreen="false" 防止全屏
+                            // loop 实现循环播放
+                            // controls 让用户可以手动控制
+                            videoHtml += '<div class="announcement-item-video"><video data-src="' + videoPath + '" muted autoplay loop playsinline webkit-playsinline x5-video-player-type="h5" x5-video-player-fullscreen="false" x-webkit-airplay="allow" preload="metadata" controls><p>您的浏览器不支持视频播放。</p></video></div>';
                         }
                         videoHtml += '</div>';
                     }
@@ -1254,7 +1256,8 @@ function lazyLoadVideos() {
             var src = video.getAttribute('data-src');
             video.src = src;
             video.removeAttribute('data-src');
-            // 尝试播放视频
+            // Android 4.4.4.4 兼容：自动播放视频，但防止希沃浏览器全屏
+            // muted + autoplay 可以实现自动播放
             try {
                 video.play();
             } catch (e) {
