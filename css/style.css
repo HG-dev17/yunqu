@@ -220,6 +220,11 @@ h1:after {
     display: -webkit-flex;
     -webkit-flex-wrap: wrap;
     -webkit-justify-content: center;
+    /* Android 4.4.4.4 兼容：防止内容溢出 */
+    overflow: hidden;
+    width: 100%;
+    -webkit-box-sizing: border-box;
+    box-sizing: border-box;
 }
 
 .announcement-item-image {
@@ -232,6 +237,12 @@ h1:after {
     /* 限制宽度避免过大图片 */
     max-width: 300px;
     width: auto;
+    /* Android 4.4.4.4 兼容：防止图片溢出 */
+    display: inline-block;
+    vertical-align: top;
+    overflow: hidden;
+    -webkit-box-sizing: border-box;
+    box-sizing: border-box;
 }
 
 .announcement-item-image img {
