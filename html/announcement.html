@@ -102,12 +102,41 @@
             font-weight: 500;
         }
         
-        .reminder {
-            background-color: #e8f4fc;
-            border-left: 4px solid #3498db;
-            padding: 15px;
-            margin: 20px 0;
-            border-radius: 0 8px 8px 0;
+        .controls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        
+        .control-btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s;
+        }
+        
+        .control-btn:hover {
+            background-color: #2980b9;
+            transform: scale(1.1);
+        }
+        
+        .control-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .control-btn.pause {
+            background-color: #e74c3c;
+        }
+        
+        .control-btn.pause:hover {
+            background-color: #c0392b;
         }
         
         .footer {
@@ -117,6 +146,48 @@
             font-size: 14px;
             padding-top: 15px;
             border-top: 1px solid #eee;
+        }
+        
+        .scroll-info {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background-color: rgba(52, 152, 219, 0.9);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            display: none;
+        }
+        
+        .speed-controls {
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .speed-btn {
+            background-color: #2ecc71;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 18px;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        
+        .speed-btn:hover {
+            background-color: #27ae60;
+        }
+        
+        .speed-btn.active {
+            background-color: #e67e22;
         }
         
         @media (max-width: 768px) {
@@ -134,6 +205,29 @@
             
             h2 {
                 font-size: 20px;
+            }
+            
+            .control-btn {
+                width: 55px;
+                height: 55px;
+                font-size: 22px;
+            }
+            
+            .scroll-info {
+                left: 10px;
+                bottom: 80px;
+                font-size: 12px;
+            }
+            
+            .speed-controls {
+                bottom: 85px;
+                right: 20px;
+            }
+            
+            .speed-btn {
+                width: 35px;
+                height: 35px;
+                font-size: 16px;
             }
         }
     </style>
@@ -174,13 +268,174 @@
             </div>
         </div>
         
-        <div class="reminder">
-            <p><strong>重要提示：</strong>请各位考生提前做好准备，熟悉考试流程和注意事项，确保考试当天顺利进行。预祝各位考生取得优异成绩！</p>
-        </div>
-        
         <div class="footer">
-            <p>© 2026 初二年级生物实验考试 | 本界面基于文档内容生成</p>
+            <p>© 2026 初二年级生物实验考试</p>
         </div>
     </div>
+    
+    <!-- 控制按钮区域 -->
+    <div class="speed-controls">
+        <button id="slowSpeed" class="speed-btn" title="慢速">🐢</button>
+        <button id="mediumSpeed" class="speed-btn active" title="中速">🐇</button>
+        <button id="fastSpeed" class="speed-btn" title="快速">⚡</button>
+    </div>
+    
+    <div class="controls">
+        <button id="toggleScroll" class="control-btn" title="暂停/继续自动滚动">⏸️</button>
+    </div>
+    
+    <div id="scrollInfo" class="scroll-info">自动滚动已开始</div>
+    
+    <script>
+        // 为兼容安卓4.4.4.4，使用传统的ES5语法
+        (function() {
+            'use strict';
+            
+            // 自动滚动相关变量
+            var isScrolling = true;
+            var scrollDirection = 1; // 1表示向下，-1表示向上
+            var scrollInterval = null;
+            
+            // 速度设置
+            var speedSettings = {
+                slow: { step: 3, delay: 40, name: "慢速" },
+                medium: { step: 5, delay: 30, name: "中速" },
+                fast: { step: 8, delay: 20, name: "快速" }
+            };
+            
+            // 当前速度设置
+            var currentSpeed = 'medium';
+            
+            // DOM元素
+            var toggleScrollBtn = document.getElementById('toggleScroll');
+            var slowSpeedBtn = document.getElementById('slowSpeed');
+            var mediumSpeedBtn = document.getElementById('mediumSpeed');
+            var fastSpeedBtn = document.getElementById('fastSpeed');
+            var scrollInfo = document.getElementById('scrollInfo');
+            
+            // 显示滚动状态信息
+            function showScrollInfo(text) {
+                scrollInfo.textContent = text;
+                scrollInfo.style.display = 'block';
+                setTimeout(function() {
+                    scrollInfo.style.display = 'none';
+                }, 1500);
+            }
+            
+            // 更新速度按钮状态
+            function updateSpeedButtons() {
+                // 移除所有按钮的active类
+                slowSpeedBtn.classList.remove('active');
+                mediumSpeedBtn.classList.remove('active');
+                fastSpeedBtn.classList.remove('active');
+                
+                // 为当前速度按钮添加active类
+                if (currentSpeed === 'slow') {
+                    slowSpeedBtn.classList.add('active');
+                } else if (currentSpeed === 'medium') {
+                    mediumSpeedBtn.classList.add('active');
+                } else if (currentSpeed === 'fast') {
+                    fastSpeedBtn.classList.add('active');
+                }
+            }
+            
+            // 开始自动滚动
+            function startAutoScroll() {
+                if (scrollInterval) {
+                    clearInterval(scrollInterval);
+                }
+                
+                var speedSetting = speedSettings[currentSpeed];
+                
+                scrollInterval = setInterval(function() {
+                    // 计算当前滚动位置
+                    var currentScroll = document.documentElement.scrollTop || document.body.scrollTop;
+                    var maxScroll = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+                    
+                    // 判断是否到达边界
+                    if (currentScroll <= 0) {
+                        scrollDirection = 1; // 到达顶部，改为向下
+                        showScrollInfo("已到达顶部，开始向下滚动");
+                    } else if (currentScroll >= maxScroll) {
+                        scrollDirection = -1; // 到达底部，改为向上
+                        showScrollInfo("已到达底部，开始向上滚动");
+                    }
+                    
+                    // 执行滚动
+                    window.scrollBy(0, scrollDirection * speedSetting.step);
+                }, speedSetting.delay);
+                
+                isScrolling = true;
+                toggleScrollBtn.textContent = "⏸️";
+                toggleScrollBtn.title = "暂停自动滚动";
+                showScrollInfo("自动滚动已开始 - " + speedSetting.name);
+            }
+            
+            // 停止自动滚动
+            function stopAutoScroll() {
+                if (scrollInterval) {
+                    clearInterval(scrollInterval);
+                    scrollInterval = null;
+                }
+                
+                isScrolling = false;
+                toggleScrollBtn.textContent = "▶️";
+                toggleScrollBtn.title = "开始自动滚动";
+                showScrollInfo("自动滚动已暂停");
+            }
+            
+            // 切换自动滚动状态
+            function toggleAutoScroll() {
+                if (isScrolling) {
+                    stopAutoScroll();
+                } else {
+                    startAutoScroll();
+                }
+            }
+            
+            // 设置滚动速度
+            function setScrollSpeed(speed) {
+                currentSpeed = speed;
+                updateSpeedButtons();
+                
+                // 如果正在滚动，重新开始以应用新速度
+                if (isScrolling) {
+                    startAutoScroll();
+                }
+                
+                showScrollInfo("已设置为" + speedSettings[speed].name);
+            }
+            
+            // 事件监听
+            toggleScrollBtn.onclick = toggleAutoScroll;
+            
+            slowSpeedBtn.onclick = function() {
+                setScrollSpeed('slow');
+            };
+            
+            mediumSpeedBtn.onclick = function() {
+                setScrollSpeed('medium');
+            };
+            
+            fastSpeedBtn.onclick = function() {
+                setScrollSpeed('fast');
+            };
+            
+            // 页面加载完成后开始自动滚动
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', function() {
+                    // 延迟1秒后开始滚动，让页面完全加载
+                    setTimeout(startAutoScroll, 1000);
+                });
+            } else {
+                // 如果DOM已经加载完成，直接开始滚动
+                setTimeout(startAutoScroll, 1000);
+            }
+            
+            // 初始化速度按钮状态
+            updateSpeedButtons();
+            
+        })();
+    </script>
 </body>
 </html>
